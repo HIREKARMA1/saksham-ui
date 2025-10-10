@@ -1,30 +1,15 @@
 "use client"
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
 
 export default function Home() {
-    const router = useRouter()
-
     return (
         <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white dark:from-gray-900 dark:to-gray-800">
-            {/* Header */}
-            <header className="border-b bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-primary-600">Saksham AI</h1>
-                    <div className="flex gap-4">
-                        <Link href="/auth/login">
-                            <Button variant="ghost">Login</Button>
-                        </Link>
-                        <Link href="/auth/register">
-                            <Button>Get Started</Button>
-                        </Link>
-                    </div>
-                </div>
-            </header>
+            {/* Navbar */}
+            <Navbar />
 
             {/* Hero Section */}
             <section className="container mx-auto px-4 py-20 text-center">
