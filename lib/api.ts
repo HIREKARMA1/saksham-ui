@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosProgressEvent } from 'axios';
 import { config } from './config';
 
 class ApiClient {
@@ -155,31 +155,159 @@ class ApiClient {
     return response.data;
   }
 
-  // Student endpoints
+  // ✅ Student endpoints - ALL using /students/ (plural)
   async getStudentDashboard(): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/student/dashboard');
+    const response: AxiosResponse = await this.client.get('/students/dashboard');
     return response.data;
   }
 
   async getStudentProfile(): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/student/profile');
+    const response: AxiosResponse = await this.client.get('/students/profile');
     return response.data;
   }
 
   async updateStudentProfile(data: any): Promise<any> {
-    const response: AxiosResponse = await this.client.put('/student/profile', data);
+    const response: AxiosResponse = await this.client.put('/students/profile', data);
     return response.data;
   }
 
-  async uploadResume(file: File): Promise<any> {
+  /**
+   * Upload resume with progress tracking
+   * @param file - Resume file (PDF/DOCX)
+   * @param onProgress - Optional callback for upload progress (0-100)
+   * @returns Upload response with file details
+   */
+  async uploadResume(
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response: AxiosResponse = await this.client.post('/student/resume/upload', formData, {
+    const response: AxiosResponse = await this.client.post(
+      '/students/resume/upload',  // ✅ /students/
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onProgress(percentCompleted);
+          }
+        },
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Get resume status
+   * @returns Resume status and details
+   */
+  async getResumeStatus(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/resume/status');  // ✅ /students/
+    return response.data;
+  }
+
+  /**
+   * Get ATS score for uploaded resume
+   * @param jobDescription - Optional job description for better matching
+   * @returns ATS score analysis with recommendations
+   */
+  async getATSScore(jobDescription?: string): Promise<any> {
+    const params = jobDescription ? { job_description: jobDescription } : {};
+    const response: AxiosResponse = await this.client.get('/students/ats-score', { params });  // ✅ /students/
+    return response.data;
+  }
+
+  /**
+   * Get job recommendations based on resume
+   * @returns Top 15 job recommendations with match scores
+   */
+  async getJobRecommendations(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/job-recommendations');  // ✅ /students/
+    return response.data;
+  }
+
+  /**
+   * Get student assessments history
+   * @param skip - Number of records to skip (pagination)
+   * @param limit - Number of records to return (pagination)
+   * @returns Assessment history
+   */
+  async getStudentAssessments(skip: number = 0, limit: number = 20): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/assessments', {  // ✅ /students/
+      params: { skip, limit }
+    });
+    return response.data;
+  }
+
+  /**
+   * Get student performance analytics
+   * @returns Performance analytics data
+   */
+  async getStudentAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/analytics');  // ✅ /students/
+    return response.data;
+  }
+
+  /**
+   * Get subscription status and details
+   * @returns Subscription information
+   */
+  async getSubscriptionStatus(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/subscription');  // ✅ /students/
+    return response.data;
+  }
+
+  // Assessment endpoints
+  async getJobRoles(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/assessments/job-roles');
+    return response.data;
+  }
+
+  async startAssessment(jobRoleId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/assessments/start', {
+      job_role_id: jobRoleId
+    });
+    return response.data;
+  }
+
+  async getAssessmentRound(assessmentId: string, roundNumber: number): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/rounds/${roundNumber}`);
+    return response.data;
+  }
+
+  async submitRoundResponses(assessmentId: string, roundId: string, responses: any[]): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/rounds/${roundId}/submit`, responses);
+    return response.data;
+  }
+
+  async submitVoiceResponse(assessmentId: string, roundId: string, formData: FormData): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/rounds/${roundId}/voice-response`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  }
+
+  async completeAssessment(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/complete`);
+    return response.data;
+  }
+
+  async getAssessmentStatus(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/status`);
+    return response.data;
+  }
+
+  async getAssessmentReport(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/report`);
     return response.data;
   }
 }
