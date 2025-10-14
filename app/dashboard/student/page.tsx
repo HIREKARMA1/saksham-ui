@@ -15,7 +15,7 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Assessments', href: '/dashboard/student/assessments', icon: ClipboardList },
+    { name: 'Assessments', href: '/dashboard/student/assessment', icon: ClipboardList },
 ]
 
 export default function StudentDashboard() {
@@ -102,7 +102,7 @@ export default function StudentDashboard() {
                                         Browse Jobs
                                     </Button>
                                 </Link>
-                                <Link href="/dashboard/student/assessments">
+                                <Link href="/dashboard/student/assessment">
                                     <Button variant="outline" className="w-full justify-start">
                                         <ClipboardList className="mr-2 h-4 w-4" />
                                         Take Assessment
