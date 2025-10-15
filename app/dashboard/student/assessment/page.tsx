@@ -89,15 +89,8 @@ const roundInfo = [
         duration: "15 min",
         icon: Target,
         color: "bg-pink-500"
-    },
-    {
-        number: 6,
-        name: "Final Evaluation",
-        description: "AI analysis and report generation",
-        duration: "5 min",
-        icon: CheckCircle,
-        color: "bg-indigo-500"
     }
+    
 ]
 
 export default function AssessmentPage() {
@@ -117,6 +110,17 @@ export default function AssessmentPage() {
             loadJobRoles()
         }
     }, [assessmentId])
+
+    // Refresh assessment data every 30 seconds to get updated scores
+    useEffect(() => {
+        if (assessmentId && assessment) {
+            const interval = setInterval(() => {
+                loadAssessment(assessmentId)
+            }, 30000) // 30 seconds
+            
+            return () => clearInterval(interval)
+        }
+    }, [assessmentId, assessment])
 
     const loadJobRoles = async () => {
         try {
@@ -225,7 +229,7 @@ export default function AssessmentPage() {
                             <CardHeader className="pb-3">
                                 <CardDescription>Completed Rounds</CardDescription>
                                 <CardTitle className="text-3xl">
-                                    {assessment.rounds?.filter((r: any) => r.status === 'completed').length || 0}/6
+                                    {assessment.rounds?.filter((r: any) => r.status === 'completed').length || 0}/5
                                 </CardTitle>
                             </CardHeader>
                         </Card>
@@ -401,7 +405,7 @@ export default function AssessmentPage() {
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                                    <p>• 6 rounds of assessment</p>
+                                    <p>• 5 rounds of assessment</p>
                                     <p>• Estimated duration: 2 hours</p>
                                     <p>• AI-powered evaluation</p>
                                     <p>• Detailed feedback and recommendations</p>

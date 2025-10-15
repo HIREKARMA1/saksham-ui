@@ -241,13 +241,13 @@ export default function AssessmentRoundPage() {
 
     const navigateToQuestion = (index: number) => {
         setCurrentQuestion(index)
-        setVisitedQuestions(prev => new Set([...prev, index]))
+        setVisitedQuestions(prev => new Set([...Array.from(prev), index]))
     }
 
     const handleNext = () => {
         if (currentQuestion < roundData.questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1)
-            setVisitedQuestions(prev => new Set([...prev, currentQuestion + 1]))
+            setVisitedQuestions(prev => new Set([...Array.from(prev), currentQuestion + 1]))
         }
     }
 
@@ -487,26 +487,33 @@ export default function AssessmentRoundPage() {
                                 {/* MCQ Options */}
                                 {currentQ.question_type === 'mcq' && currentQ.options && Array.isArray(currentQ.options) && (
                                     <div className="space-y-2">
-                                        {currentQ.options.map((option: any, index: number) => (
-                                            <label 
-                                                key={index}
-                                                className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name={`question-${currentQ.id}`}
-                                                    value={typeof option === 'string' ? option : JSON.stringify(option)}
-                                                    checked={responses[currentQ.id]?.response_text === (typeof option === 'string' ? option : JSON.stringify(option))}
-                                                    onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
-                                                    className="w-4 h-4 text-blue-600"
-                                                />
-                                                <span className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
-                                                    {String.fromCharCode(97 + index)}) {typeof option === 'string' ? option : JSON.stringify(option)}
-                                                </span>
-                                            </label>
-                                        ))}
+                                        {currentQ.options.map((option: any, index: number) => {
+                                            // ✅ FIX: Use letter as the value (A, B, C, D)
+                                            const optionLetter = String.fromCharCode(65 + index) // 65 is 'A'
+                                            const optionText = typeof option === 'string' ? option : JSON.stringify(option)
+                                            
+                                            return (
+                                                <label 
+                                                    key={index}
+                                                    className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name={`question-${currentQ.id}`}
+                                                        value={optionLetter}  // ✅ Send just "A", "B", "C", or "D"
+                                                        checked={responses[currentQ.id]?.response_text === optionLetter}
+                                                        onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                                                        className="w-4 h-4 text-blue-600"
+                                                    />
+                                                    <span className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
+                                                        {optionLetter}) {optionText}
+                                                    </span>
+                                                </label>
+                                            )
+                                        })}
                                     </div>
                                 )}
+
 
                                 {/* Voice Response */}
                                 {isVoiceRound && (

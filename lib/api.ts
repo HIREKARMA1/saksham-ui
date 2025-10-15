@@ -310,6 +310,18 @@ class ApiClient {
     const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/report`);
     return response.data;
   }
+
+  async getAssessmentReportWithQuestions(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/report`, {
+      params: { include: 'questions' }
+    });
+    return response.data;
+  }
+
+  async getAssessmentQA(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/qa`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
