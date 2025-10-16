@@ -18,7 +18,8 @@ import {
     Mic,
     CheckCircle,
     Clock,
-    Target
+    Target,
+    MessageCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -68,6 +69,14 @@ const roundInfo = [
     },
     {
         number: 3,
+        name: "Group Discussion",
+        description: "Interactive discussion with AI moderator",
+        duration: "25 min",
+        icon: MessageCircle,
+        color: "bg-violet-500"
+    },
+    {
+        number: 4,
         name: "Technical MCQ",
         description: "Domain-specific questions",
         duration: "30 min",
@@ -75,7 +84,7 @@ const roundInfo = [
         color: "bg-purple-500"
     },
     {
-        number: 4,
+        number: 5,
         name: "Technical Interview",
         description: "Voice-based technical discussion",
         duration: "20 min",
@@ -83,14 +92,13 @@ const roundInfo = [
         color: "bg-orange-500"
     },
     {
-        number: 5,
+        number: 6,
         name: "HR Interview",
         description: "Behavioral and cultural fit",
         duration: "15 min",
         icon: Target,
         color: "bg-pink-500"
     }
-    
 ]
 
 export default function AssessmentPage() {

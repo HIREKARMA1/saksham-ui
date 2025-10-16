@@ -11,6 +11,13 @@ import {
     Mic, Square, Send, Clock, CheckCircle2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { GroupDiscussionRound } from '@/components/assessment/GroupDiscussionRound'
+
+interface GDResponse {
+    response_text: string;
+    time_taken?: number;
+    score?: number;
+}
 
 // Speech Recognition Types
 interface SpeechRecognitionEvent extends Event {
@@ -53,9 +60,20 @@ const sidebarItems = [
 const roundNames = {
     1: "Aptitude Test",
     2: "Soft Skills Assessment", 
-    3: "Technical MCQ",
-    4: "Technical Interview",
-    5: "HR Interview"
+    3: "Group Discussion",
+    4: "Technical MCQ",
+    5: "Technical Interview",
+    6: "HR Interview"
+}
+
+// Map frontend round numbers to backend round types
+const roundTypeMap = {
+    1: 'aptitude',
+    2: 'soft_skills',
+    3: 'group_discussion',
+    4: 'technical_mcq',
+    5: 'technical_interview',
+    6: 'hr_interview'
 }
 
 export default function AssessmentRoundPage() {
@@ -80,7 +98,9 @@ export default function AssessmentRoundPage() {
     const assessmentId = searchParams.get('assessment_id')
     const roundNumber = parseInt(searchParams.get('round') || '1')
 
-    const isVoiceRound = roundData?.round_type === 'technical_interview' || roundData?.round_type === 'hr_interview'
+    const roundType = roundTypeMap[roundNumber as keyof typeof roundTypeMap];
+    const isVoiceRound = roundType === 'technical_interview' || roundType === 'hr_interview';
+    const isGroupDiscussionRound = roundType === 'group_discussion';
     const currentQ = roundData?.questions?.[currentQuestion]
     const counts = roundData ? getCounts() : { answered: 0, notAnswered: 0, marked: 0, notVisited: 0 }
     const canSubmit = roundData ? allQuestionsAnswered() : false
@@ -236,6 +256,7 @@ export default function AssessmentRoundPage() {
             const data = await apiClient.getAssessmentRound(assessmentId!, roundNumber)
             if (isMounted) {
                 console.log('📥 Round data loaded:', data)
+                console.log('Round type:', data.round_type)
                 setRoundData(data)
             }
         } catch (error) {
@@ -454,7 +475,37 @@ export default function AssessmentRoundPage() {
         )
     }
 
-    if (!roundData || !roundData.questions || roundData.questions.length === 0) {
+    if (isGroupDiscussionRound) {
+        return (
+            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+                <GroupDiscussionRound
+                    roundId={roundData?.round_id || roundData?.id}
+                    onComplete={async (responses) => {
+                        try {
+                            setSubmitting(true);
+                            await apiClient.submitRoundResponses(
+                                assessmentId!,
+                                roundData.round_id || roundData.id,
+                                responses.map(response => ({
+                                    response_text: response.response_text,
+                                    time_taken: response.time_taken || 0,
+                                    score: response.score || 0
+                                }))
+                            );
+                            toast.success('Discussion round completed successfully!');
+                            router.push(`/dashboard/student/assessment?id=${assessmentId}`);
+                        } catch (error) {
+                            console.error('Error submitting discussion responses:', error);
+                            toast.error('Failed to submit discussion responses');
+                            setSubmitting(false);
+                        }
+                    }}
+                />
+            </DashboardLayout>
+        );
+    }
+
+    if (!roundData || (!isGroupDiscussionRound && (!roundData.questions || roundData.questions.length === 0))) {
         return (
             <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
                 <div className="text-center py-12">
@@ -471,6 +522,34 @@ export default function AssessmentRoundPage() {
     }
 
 
+
+    // ========== GROUP DISCUSSION ROUND ==========
+    if (isGroupDiscussionRound) {
+        return (
+            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+                <GroupDiscussionRound 
+                    roundId={roundData.id} 
+                    onComplete={(responses: GDResponse[]) => {
+                        // Take the responses from the GD component and format them for the assessment
+                        setResponses(prev => ({
+                            ...prev,
+                            ...responses.reduce((acc: Record<string, any>, r: GDResponse, index: number) => ({
+                                ...acc,
+                                [roundData.questions[index].id]: {
+                                    response_text: r.response_text,
+                                    time_taken: r.time_taken || 0,
+                                    score: r.score
+                                }
+                            }), {})
+                        }));
+                        
+                        // Submit the round
+                        handleSubmitRound();
+                    }}
+                />
+            </DashboardLayout>
+        );
+    }
 
     // ========== CHAT INTERFACE FOR INTERVIEW ROUNDS ==========
     if (isVoiceRound) {
