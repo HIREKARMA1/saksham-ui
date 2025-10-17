@@ -88,9 +88,11 @@ export function GroupDiscussionRound({
         strengths: string[];
     } | null>(null);
 
-    // Fetch topic when entering topic step
+    // Fetch topic when entering topic step - always fetch new topic
     useEffect(() => {
-        if (currentStep === 'topic' && !topic) {
+        if (currentStep === 'topic') {
+            // Reset topic state to null to ensure we get a fresh topic
+            setTopic(null);
             fetchTopic();
         }
     }, [currentStep]);
@@ -108,32 +110,61 @@ export function GroupDiscussionRound({
             console.log('Fetching topic for round:', roundId);
             
             // baseURL already includes /api/v1
-            const { data } = await apiClient.client.post(`/assessments/rounds/${roundId}/gd/topic`);
-            console.log('Received topic data:', data);
+            // Add timestamp to ensure we get a fresh topic each time
+            const timestamp = new Date().getTime();
+            // Force refresh=true to ensure we always get a new topic
+            let response = await apiClient.client.post(`/assessments/rounds/${roundId}/gd/topic?t=${timestamp}&refresh=true`);
+            let topicData = response.data;
+            console.log('Received topic data:', topicData);
             
-            // Store the complete topic data from AI, with better fallbacks
-            const topicData = {
-                title: data.title || data.topic || "AI in the Workplace",
-                content: data.background || data.description || data.content || 
+            // Store topic ID for comparison to detect if we're getting the same topic
+            const lastTopicId = window.localStorage.getItem('lastGdTopicId');
+            const currentTopicId = `${topicData.title || 'unknown'}-${timestamp}`;
+            
+            // Check if we got the same topic as last time
+            if (lastTopicId && topicData.title && lastTopicId.startsWith(topicData.title)) {
+                console.warn('Received the same topic again, will retry');
+                // Retry once with an additional delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const retryTimestamp = new Date().getTime();
+                const retryResponse = await apiClient.client.post(
+                    `/assessments/rounds/${roundId}/gd/topic?t=${retryTimestamp}&refresh=true&retry=true`
+                );
+                console.log('Retry response:', retryResponse.data);
+                topicData = retryResponse.data;
+            }
+            
+            // Store current topic ID
+            if (topicData.title) {
+                window.localStorage.setItem('lastGdTopicId', currentTopicId);
+            }
+            
+            // Use the final topic data from API response
+            const apiData = topicData;
+            
+            // Process the data into our topic format
+            const processedTopicData = {
+                title: apiData.title || apiData.topic || "AI in the Workplace",
+                content: apiData.background || apiData.description || apiData.content || 
                     "Discuss the ethical implications and practical considerations of AI in modern workplaces. How should companies balance efficiency with human factors?",
-                followUpQuestions: data.key_points || data.expected_perspectives || data.follow_up_questions || [
+                followUpQuestions: apiData.key_points || apiData.expected_perspectives || apiData.follow_up_questions || [
                     "Candidates with technical backgrounds may focus on the algorithmic fairness and data privacy aspects.",
                     "Ethics-focused candidates might emphasize the moral responsibilities of companies using AI.",
                     "Business-oriented candidates could discuss the balance between efficiency and ethical considerations.",
                     "Legal perspectives might explore the need for regulations and accountability in AI-driven hiring."
                 ]
             };
-            console.log('Processed topic data:', topicData);
+            console.log('Processed topic data:', processedTopicData);
             
             // Ensure we always have a valid topic object
-            setTopic(topicData);
+            setTopic(processedTopicData);
             
             // Announce the topic information
             toast.success('Discussion topic loaded successfully!');
             
             // Pre-fetch audio if available
-            if (data.audio_url) {
-                fetch(data.audio_url).catch(console.error); // Preload audio
+            if (apiData.audio_url) {
+                fetch(apiData.audio_url).catch(console.error); // Preload audio
             }
         } catch (error) {
             console.error('Error fetching topic:', error);
@@ -160,7 +191,7 @@ export function GroupDiscussionRound({
     const getFinalEvaluation = async () => {
         try {
             setLoading(true);
-            const { data } = await apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
+            const { data: evalData } = await apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
                 responses: gdResponses.map(r => ({
                     user_response: r.userResponse,
                     ai_question: r.aiQuestion
@@ -168,10 +199,10 @@ export function GroupDiscussionRound({
             });
 
             const evaluation = {
-                score: data.score,
-                feedback: data.feedback,
-                areasOfImprovement: data.areas_of_improvement,
-                strengths: data.strengths
+                score: evalData.score,
+                feedback: evalData.feedback,
+                areasOfImprovement: evalData.areas_of_improvement,
+                strengths: evalData.strengths
             };
             setFinalEvaluation(evaluation);
             setCurrentStep('evaluation');
@@ -302,15 +333,15 @@ export function GroupDiscussionRound({
             setLoading(true);
             console.log('Sending user response:', text);
             
-            const { data } = await apiClient.client.post(`/assessments/rounds/${roundId}/gd/response`, {
+            const { data: responseData } = await apiClient.client.post(`/assessments/rounds/${roundId}/gd/response`, {
                 text: text
             });
-            console.log('Received AI response data:', data);
+            console.log('Received AI response data:', responseData);
 
             // Create a consistent AI response object
             const aiResponse: AIResponse = {
-                text: data.follow_up_question || data.response || "That's an interesting perspective. Could you elaborate more on that point?",
-                audioUrl: data.audio_url
+                text: responseData.follow_up_question || responseData.response || "That's an interesting perspective. Could you elaborate more on that point?",
+                audioUrl: responseData.audio_url
             };
             setCurrentAIResponse(aiResponse);
             
