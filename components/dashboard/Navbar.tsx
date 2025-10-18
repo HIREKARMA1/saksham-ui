@@ -32,15 +32,13 @@ export function Navbar({ user }: NavbarProps) {
                     <ThemeToggle />
 
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="flex items-center gap-2">
-                                <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                                    <UserIcon className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                                </div>
-                                <span className="hidden md:inline">{user?.name || 'User'}</span>
-                            </Button>
+                        <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer border-0 bg-transparent">
+                            <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                                <UserIcon className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <span className="hidden md:inline">{user?.name || 'User'}</span>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuContent className="w-56">
                             <DropdownMenuLabel>
                                 <div>
                                     <p className="font-medium">{user?.name}</p>
@@ -68,4 +66,9 @@ export function Navbar({ user }: NavbarProps) {
         </nav>
     )
 }
+
+
+
+
+
 

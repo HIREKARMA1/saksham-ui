@@ -66,11 +66,11 @@ export default function AssessmentHistoryPage() {
         return { label: 'Needs Work', icon: Brain, color: 'bg-red-500' }
     }
 
-    // Calculate statistics
+    // Calculate statistics (normalize status)
     const stats = {
         total: history.total,
-        completed: history.assessments.filter((a: any) => a.status === 'completed').length,
-        inProgress: history.assessments.filter((a: any) => a.status === 'in_progress').length,
+        completed: history.assessments.filter((a: any) => (a.status || '').toLowerCase() === 'completed').length,
+        inProgress: history.assessments.filter((a: any) => (a.status || '').toLowerCase() === 'in_progress').length,
         avgScore: history.assessments.length > 0 
             ? (history.assessments.reduce((sum: number, a: any) => sum + (a.overall_score || 0), 0) / history.assessments.length).toFixed(1)
             : 0,

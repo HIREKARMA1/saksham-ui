@@ -54,7 +54,7 @@ export default function StudentDashboard() {
             // Fetch recent assessments and pick latest completed for Detailed Analysis
             try {
                 const assmts = await apiClient.getStudentAssessments(0, 10)
-                const completed = (assmts?.assessments || []).filter((x: any) => String(x.status) === 'completed')
+                const completed = (assmts?.assessments || []).filter((x: any) => String(x.status).toLowerCase() === 'completed')
                 if (completed.length > 0) {
                     const latest = completed.sort((b: any, c: any) => new Date(c.completed_at || c.started_at).getTime() - new Date(b.completed_at || b.started_at).getTime())[0]
                     setLatestReport({ id: latest.assessment_id, date: latest.completed_at || latest.started_at })
@@ -288,4 +288,9 @@ export default function StudentDashboard() {
         </DashboardLayout>
     )
 }
+
+
+
+
+
 

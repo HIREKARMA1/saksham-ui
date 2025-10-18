@@ -155,7 +155,25 @@ export default function AssessmentPage() {
     const loadAssessment = async (id: string) => {
         try {
             const data = await apiClient.getAssessmentStatus(id)
-            setAssessment(data)
+            // Normalize status strings to lowercase to handle enum vs string differences
+            const normalizeStatus = (val: any) => {
+                if (val == null) return val
+                // enum objects may have a 'value' prop, otherwise toString()
+                const s = typeof val === 'string' ? val : (val.value ?? String(val))
+                return String(s).toLowerCase()
+            }
+
+            const normalized = {
+                ...data,
+                status: normalizeStatus(data.status),
+                rounds: Array.isArray(data.rounds)
+                    ? data.rounds.map((r: any) => ({
+                        ...r,
+                        status: normalizeStatus(r.status),
+                    }))
+                    : [],
+            }
+            setAssessment(normalized)
         } catch (error) {
             console.error('Error loading assessment:', error)
             toast.error('Failed to load assessment')

@@ -51,6 +51,7 @@ export default function AssessmentReportPage() {
     const [qaData, setQaData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState('overview')
+    const [selectedRound, setSelectedRound] = useState<number | null>(null)
     
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -361,7 +362,7 @@ export default function AssessmentReportPage() {
                             {report?.rounds?.map((round: any) => {
                                 const roundConfig = roundInfo.find(r => r.number === round.round_number)
                                 return (
-                                    <Card key={round.round_number} className="hover:shadow-lg transition-shadow">
+                                    <Card key={round.round_number} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => { setSelectedRound(round.round_number); setActiveTab('round'); }}>
                                         <CardHeader className="pb-3">
                                             <div className="flex items-center gap-3">
                                                 <div className={`p-3 rounded-xl ${roundConfig?.color} text-white`}>
@@ -391,6 +392,68 @@ export default function AssessmentReportPage() {
                                 )
                             })}
                         </div>
+                    </TabsContent>
+
+                    {/* Round Questions Tab (dynamic) */}
+                    <TabsContent value="round" className="space-y-6">
+                        {selectedRound !== null && qaData?.rounds?.filter((r: any) => r.round_number === selectedRound).map((round: any) => (
+                            <Card key={round.round_number}>
+                                <CardHeader>
+                                    <CardTitle>
+                                        Round {round.round_number} - {round.round_type.replace('_', ' ').toUpperCase()}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Score: {round.percentage?.toFixed(1)}% ({round.score}/{round.questions.reduce((sum: number, q: any) => sum + q.max_score, 0)} points)
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        {round.questions.map((q: any, idx: number) => (
+                                            <div key={q.id} className="p-4 border rounded-lg space-y-3">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Badge variant="outline">Q{idx + 1}</Badge>
+                                                            <Badge variant={q.is_correct ? 'default' : 'destructive'}>
+                                                                {q.is_correct ? 'Correct' : 'Incorrect'}
+                                                            </Badge>
+                                                            <span className="text-sm text-gray-500">
+                                                                {q.score}/{q.max_score} points
+                                                            </span>
+                                                        </div>
+                                                        <p className="font-medium mb-2">{q.text}</p>
+                                                        <div className="grid md:grid-cols-2 gap-3 text-sm">
+                                                            <div>
+                                                                <span className="font-medium text-gray-700 dark:text-gray-300">Your Answer:</span>
+                                                                <p className={q.is_correct ? 'text-green-600' : 'text-red-600'}>
+                                                                    {q.student_response || (q.response_audio_url ? '🎤 Voice Response' : '—')}
+                                                                </p>
+                                                            </div>
+                                                            {q.correct_answer && (
+                                                                <div>
+                                                                    <span className="font-medium text-gray-700 dark:text-gray-300">Correct Answer:</span>
+                                                                    <p className="text-green-600">{q.correct_answer}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {q.ai_feedback && (
+                                                            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
+                                                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                                                    <strong>💡 Feedback:</strong> {q.ai_feedback}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                        <Button variant="outline" onClick={() => { setSelectedRound(null); setActiveTab('detailed'); }}>
+                            Back to All Rounds
+                        </Button>
                     </TabsContent>
 
                     {/* All Questions Tab */}
