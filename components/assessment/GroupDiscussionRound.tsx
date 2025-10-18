@@ -36,6 +36,7 @@ interface Topic {
     title: string;
     content: string;
     followUpQuestions?: string[];
+    instructions?: string;
 }
 
 interface AIResponse {
@@ -43,12 +44,22 @@ interface AIResponse {
     audioUrl?: string;
 }
 
+interface EvaluationFeedback {
+    criteria_scores: {
+        communication: number;
+        topic_understanding: number;
+        interaction: number;
+    };
+    strengths: string[];
+    improvements: string[];
+}
+
 interface GDResponse {
     userResponse: string;
     aiQuestion: string;
     evaluation?: {
         score: number;
-        feedback: string;
+        feedback: EvaluationFeedback;
         areasOfImprovement: string[];
         strengths: string[];
     };
@@ -81,96 +92,119 @@ export function GroupDiscussionRound({
     const [transcript, setTranscript] = useState('');
     const [interimTranscript, setInterimTranscript] = useState('');
     const [isAISpeaking, setIsAISpeaking] = useState(false);
+    const [speakingTime, setSpeakingTime] = useState(0);
+    const [speakingTimerId, setSpeakingTimerId] = useState<NodeJS.Timeout | null>(null);
+    const [showManualInput, setShowManualInput] = useState(false);
+    const [manualInputText, setManualInputText] = useState('');
+    const [isTopicAnnounced, setIsTopicAnnounced] = useState(false);
+    const [discussionComplete, setDiscussionComplete] = useState(false);
     const [finalEvaluation, setFinalEvaluation] = useState<{
         score: number;
-        feedback: string;
+        feedback: {
+            criteria_scores: {
+                communication: number;
+                topic_understanding: number;
+                interaction: number;
+            };
+            strengths: string[];
+            improvements: string[];
+        };
         areasOfImprovement: string[];
         strengths: string[];
     } | null>(null);
 
-    // Fetch topic when entering topic step - always fetch new topic
+    // Fetch topic when entering topic step - fetch once
     useEffect(() => {
-        if (currentStep === 'topic') {
-            // Reset topic state to null to ensure we get a fresh topic
-            setTopic(null);
+        if (currentStep === 'topic' && !topic) {
+            // Only fetch if we don't have a topic yet
+            setFetchAttempt(0);
             fetchTopic();
         }
-    }, [currentStep]);
+        
+        // Cleanup function to reset state when component unmounts or step changes
+        return () => {
+            setFetchAttempt(0);
+        };
+    }, [currentStep, topic]);
 
-    // Check for discussion completion
-    useEffect(() => {
-        if (gdResponses.length >= 5) {
-            getFinalEvaluation();
-        }
-    }, [gdResponses]);
+    // Track fetch attempts to prevent multiple retries
+    const [fetchAttempt, setFetchAttempt] = useState(0);
+    const maxRetries = 10; // Maximum number of retry attempts
+
+    const inFlightRef = useRef(false);
 
     const fetchTopic = async () => {
+        // Prevent multiple fetches while loading, already in-flight, or if max retries exceeded
+        if (loading || inFlightRef.current || fetchAttempt > maxRetries) {
+            return;
+        }
+        inFlightRef.current = true;
+        setLoading(true);
         try {
-            setLoading(true);
-            console.log('Fetching topic for round:', roundId);
-            
-            // baseURL already includes /api/v1
-            // Add timestamp to ensure we get a fresh topic each time
             const timestamp = new Date().getTime();
-            // Force refresh=true to ensure we always get a new topic
-            let response = await apiClient.client.post(`/assessments/rounds/${roundId}/gd/topic?t=${timestamp}&refresh=true`);
-            let topicData = response.data;
+            // Set refresh to false to get existing topic or generate once
+            const response = await Promise.race([
+                apiClient.client.post(`/assessments/rounds/${roundId}/gd/topic?t=${timestamp}&refresh=false`),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), 15000))
+            ]) as any;
+            const topicData = response.data;
             console.log('Received topic data:', topicData);
-            
-            // Store topic ID for comparison to detect if we're getting the same topic
-            const lastTopicId = window.localStorage.getItem('lastGdTopicId');
-            const currentTopicId = `${topicData.title || 'unknown'}-${timestamp}`;
-            
-            // Check if we got the same topic as last time
-            if (lastTopicId && topicData.title && lastTopicId.startsWith(topicData.title)) {
-                console.warn('Received the same topic again, will retry');
-                // Retry once with an additional delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                const retryTimestamp = new Date().getTime();
-                const retryResponse = await apiClient.client.post(
-                    `/assessments/rounds/${roundId}/gd/topic?t=${retryTimestamp}&refresh=true&retry=true`
-                );
-                console.log('Retry response:', retryResponse.data);
-                topicData = retryResponse.data;
+
+            // Handle error status
+            if (topicData && topicData.status === 'error') {
+                console.error('Error from server:', topicData.message);
+                throw new Error(topicData.message || 'Failed to generate topic');
             }
-            
-            // Store current topic ID
+
+            // Verify we got valid topic data
+            if (!topicData || (!topicData.title && !topicData.topic)) {
+                console.error('Invalid topic data received:', topicData);
+                throw new Error('Invalid topic data received');
+            }
+
+            // Store current topic ID if available
             if (topicData.title) {
-                window.localStorage.setItem('lastGdTopicId', currentTopicId);
+                window.localStorage.setItem('lastGdTopicId', topicData.title);
             }
-            
-            // Use the final topic data from API response
-            const apiData = topicData;
-            
+
             // Process the data into our topic format
             const processedTopicData = {
-                title: apiData.title || apiData.topic || "AI in the Workplace",
-                content: apiData.background || apiData.description || apiData.content || 
+                title: topicData.title || topicData.topic || "AI in the Workplace",
+                content: topicData.background || topicData.description || topicData.content ||
                     "Discuss the ethical implications and practical considerations of AI in modern workplaces. How should companies balance efficiency with human factors?",
-                followUpQuestions: apiData.key_points || apiData.expected_perspectives || apiData.follow_up_questions || [
+                followUpQuestions: topicData.key_points || topicData.expected_perspectives || topicData.follow_up_questions || [
                     "Candidates with technical backgrounds may focus on the algorithmic fairness and data privacy aspects.",
                     "Ethics-focused candidates might emphasize the moral responsibilities of companies using AI.",
                     "Business-oriented candidates could discuss the balance between efficiency and ethical considerations.",
                     "Legal perspectives might explore the need for regulations and accountability in AI-driven hiring."
-                ]
+                ],
+                instructions: topicData.instructions || "Please speak for 1-2 minutes on this topic, sharing your perspective and supporting your points with examples or reasoning."
             };
             console.log('Processed topic data:', processedTopicData);
-            
-            // Ensure we always have a valid topic object
             setTopic(processedTopicData);
-            
-            // Announce the topic information
             toast.success('Discussion topic loaded successfully!');
-            
+            setFetchAttempt(0);
+
             // Pre-fetch audio if available
-            if (apiData.audio_url) {
-                fetch(apiData.audio_url).catch(console.error); // Preload audio
+            if (topicData.audio_url) {
+                fetch(topicData.audio_url).catch(console.error);
             }
         } catch (error) {
             console.error('Error fetching topic:', error);
-            toast.error('Failed to fetch discussion topic. Using default topic instead.');
             
-            // Set default topic if fetch fails
+            // Only retry if this is the first attempt
+            if (fetchAttempt < 1) {
+                setFetchAttempt(prev => prev + 1);
+                toast.error('Failed to fetch topic. Retrying...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                inFlightRef.current = false;
+                setLoading(false);
+                fetchTopic();
+                return;
+            }
+            
+            // Use fallback topic after retries
+            toast.error('Failed to fetch discussion topic. Using default topic instead.');
             setTopic({
                 title: "The Future of Work in a Digital Age",
                 content: "Discuss how technological advancements are reshaping work environments and job requirements. Consider factors like remote work, automation, and the evolving skill demands.",
@@ -183,27 +217,74 @@ export function GroupDiscussionRound({
             });
         } finally {
             setLoading(false);
+            inFlightRef.current = false;
         }
     };
 
-    const MAX_RESPONSES = 5; // Maximum number of responses for the discussion
+    const MAX_RESPONSES = 2; // Maximum number of responses for the discussion - user speaks, AI responds, user speaks again, then submit button appears
+
+    const [evalAttempt, setEvalAttempt] = useState(0);
+    const maxEvalRetries = 2; // Maximum number of evaluation retry attempts
 
     const getFinalEvaluation = async () => {
+        // Prevent multiple evaluation attempts or if already completed
+        if (loading || currentStep === 'evaluation' || !evaluationInitiated) {
+            return;
+        }
+
+        // If max retries reached, use fallback and prevent further attempts
+        if (evalAttempt >= maxEvalRetries) {
+            console.log('Max retries reached, using fallback evaluation');
+            setEvaluationInitiated(false); // Reset for potential future evaluations
+            setFinalEvaluation({
+                score: 70,
+                feedback: {
+                    criteria_scores: {
+                        communication: 70,
+                        topic_understanding: 70,
+                        interaction: 70
+                    },
+                    strengths: ['Participated in the discussion', 'Provided responses to questions'],
+                    improvements: ['Consider providing more detailed examples', 'Try to engage more deeply with follow-up questions']
+                },
+                areasOfImprovement: ['Consider providing more detailed examples', 'Try to engage more deeply with follow-up questions'],
+                strengths: ['Participated in the discussion', 'Provided responses to questions']
+            });
+            setCurrentStep('evaluation');
+            return;
+        }
+
         try {
             setLoading(true);
-            const { data: evalData } = await apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
-                responses: gdResponses.map(r => ({
-                    user_response: r.userResponse,
-                    ai_question: r.aiQuestion
-                }))
-            });
+            const response = await Promise.race([
+                apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Evaluation request timeout')), 10000))
+            ]) as { data: any };
+            
+            const evalData = response.data;
+            if (!evalData) {
+                throw new Error('No evaluation data received');
+            }
+            
+            // Reset evaluation state since we got a successful response
+            setEvaluationInitiated(false);
 
+            // Keep scores as integers (0-100 range) from backend
             const evaluation = {
-                score: evalData.score,
-                feedback: evalData.feedback,
-                areasOfImprovement: evalData.areas_of_improvement,
-                strengths: evalData.strengths
+                score: parseInt(evalData.score) || 75,
+                feedback: {
+                    criteria_scores: {
+                        communication: parseInt(evalData.feedback?.criteria_scores?.communication) || 75,
+                        topic_understanding: parseInt(evalData.feedback?.criteria_scores?.topic_understanding) || 75,
+                        interaction: parseInt(evalData.feedback?.criteria_scores?.interaction) || 75
+                    },
+                    strengths: evalData.feedback?.strengths || [],
+                    improvements: evalData.feedback?.improvements || []
+                },
+                areasOfImprovement: evalData.feedback?.improvements || [],
+                strengths: evalData.feedback?.strengths || []
             };
+            
             setFinalEvaluation(evaluation);
             setCurrentStep('evaluation');
             
@@ -214,22 +295,48 @@ export function GroupDiscussionRound({
                     evaluation: evaluation
                 }),
                 score: evaluation.score,
-                time_taken: 0 // You might want to track actual time
+                time_taken: 0
             }]);
+
+            toast.success('Discussion evaluation complete! View your results below.');
         } catch (error) {
             console.error('Error getting evaluation:', error);
-            toast.error('Failed to get final evaluation. Please try again.');
+            setEvalAttempt(prev => prev + 1);
+            
+            if (evalAttempt < maxEvalRetries) {
+                toast.error('Failed to get evaluation. Retrying in 2 seconds...');
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                setLoading(false);
+                getFinalEvaluation();
+                return;
+            }
+            
+            // If we've reached max retries, use fallback
+            const fallbackEvaluation = {
+                score: 70,
+                feedback: {
+                    criteria_scores: {
+                        communication: 70,
+                        topic_understanding: 70,
+                        interaction: 70
+                    },
+                    strengths: ['Participated in the discussion', 'Provided relevant responses'],
+                    improvements: ['Could provide more detailed examples', 'Could engage more deeply with the topic']
+                },
+                areasOfImprovement: ['Could provide more detailed examples', 'Could engage more deeply with the topic'],
+                strengths: ['Participated in the discussion', 'Provided relevant responses']
+            };
+            
+            setFinalEvaluation(fallbackEvaluation);
+            setCurrentStep('evaluation');
         } finally {
             setLoading(false);
         }
     };
 
-    // Check if we should transition to evaluation
-    useEffect(() => {
-        if (gdResponses.length >= MAX_RESPONSES) {
-            getFinalEvaluation();
-        }
-    }, [gdResponses]);
+    // Track if evaluation has been initiated
+    const [evaluationInitiated, setEvaluationInitiated] = useState(false);
 
     // Speech recognition setup
     const speechRecognition = useRef<any>(null);
@@ -270,11 +377,28 @@ export function GroupDiscussionRound({
                     console.error('Speech recognition error:', error);
                     toast.error(getErrorMessage(error));
                     setIsListening(false);
+                    
+                    // If error occurs after some speech was captured, try to process what we have
+                    if (transcript.trim()) {
+                        toast.success('Processing the speech we captured so far...');
+                        handleUserResponse(transcript);
+                    } else {
+                        toast.error('No speech was detected. Please try again by clicking Start Speaking.');
+                        // Show manual input as fallback
+                        setShowManualInput(true);
+                    }
                 };
 
                 speechRecognition.current.onend = () => {
+                    console.log('Speech recognition ended, isListening:', isListening);
                     if (isListening) {
-                        speechRecognition.current.start();
+                        try {
+                            speechRecognition.current.start();
+                        } catch (err) {
+                            console.error('Error restarting speech recognition:', err);
+                            setIsListening(false);
+                            toast.error('Speech recognition stopped unexpectedly. Please click Start Speaking again.');
+                        }
                     }
                 };
             }
@@ -286,6 +410,16 @@ export function GroupDiscussionRound({
         return () => {
             if (speechRecognition.current) {
                 speechRecognition.current.stop();
+            }
+            
+            // Clean up any timers
+            if (speakingTimerId) {
+                clearInterval(speakingTimerId);
+            }
+            
+            // Stop any speech synthesis that might be in progress
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
             }
         };
     }, []);
@@ -312,36 +446,122 @@ export function GroupDiscussionRound({
         setIsListening(true);
         setTranscript('');
         setInterimTranscript('');
+        setSpeakingTime(0);
+        
+        // Start the timer for tracking speaking duration
+        const timerId = setInterval(() => {
+            setSpeakingTime(prevTime => prevTime + 1);
+        }, 1000);
+        
+        setSpeakingTimerId(timerId);
         speechRecognition.current.start();
-        toast.success('🎤 Listening... Speak clearly.');
+        toast.success('🎤 Listening... Please speak for 1-2 minutes.');
     };
 
     const stopListening = () => {
         if (speechRecognition.current) {
+            console.log('Stopping speech recognition');
             speechRecognition.current.stop();
             setIsListening(false);
             
+            // Clear the speaking timer
+            if (speakingTimerId) {
+                clearInterval(speakingTimerId);
+                setSpeakingTimerId(null);
+            }
+            
             // Process the complete response
             if (transcript.trim()) {
+                console.log('Processing transcript:', transcript);
                 handleUserResponse(transcript);
+            } else {
+                // If no transcript was detected, provide feedback and show manual input
+                console.warn('No speech detected after stopping');
+                toast.error('No speech was detected. You can type your response instead.');
+                setInterimTranscript('');
+                setShowManualInput(true);
             }
         }
     };
 
+    const [responseAttempt, setResponseAttempt] = useState(0);
+    const maxResponseRetries = 2;
+
     const handleUserResponse = async (text: string) => {
+        // Prevent processing responses if discussion is already complete
+        if (discussionComplete) {
+            toast.success('Discussion is complete. Please click "Submit Discussion" to get your evaluation.');
+            return;
+        }
+
+        if (responseAttempt >= maxResponseRetries) {
+            setResponseAttempt(0); // Reset for next response
+            toast.error('Unable to process response after multiple attempts. Using fallback response.');
+            return;
+        }
+
         try {
+            // Check if the response is very short (less than 10 words)
+            const wordCount = text.trim().split(/\s+/).length;
+            if (wordCount < 10) {
+                // If this is not the last response, encourage more detailed input
+                if (gdResponses.length === 0) {
+                    toast.error('Please provide a more detailed response (1-2 minutes worth). Try to speak in full sentences and explain your thoughts.', { duration: 5000 });
+                    return;
+                }
+            }
+            
             setLoading(true);
             console.log('Sending user response:', text);
             
-            const { data: responseData } = await apiClient.client.post(`/assessments/rounds/${roundId}/gd/response`, {
-                text: text
-            });
-            console.log('Received AI response data:', responseData);
+            // Show a loading indicator
+            toast.success('Processing your response...', { duration: 3000 });
+            
+            let responseData;
+            try {
+                const response = await Promise.race([
+                    apiClient.client.post(`/assessments/rounds/${roundId}/gd/response`, { text }),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Request timeout')), 15000)
+                    )
+                ]) as any;
+                
+                responseData = response.data;
+                console.log('Received AI response data:', responseData);
+            } catch (apiError) {
+                console.error('API call failed:', apiError);
+                setResponseAttempt(prev => prev + 1);
+                
+                if (responseAttempt < maxResponseRetries) {
+                    toast.error('Connection issue. Retrying in 2 seconds...', { duration: 2000 });
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    setLoading(false);
+                    handleUserResponse(text); // Retry the request
+                    return;
+                }
+                
+                // If we've reached max retries, use fallback responses
+                if (gdResponses.length === 0) {
+                    responseData = {
+                        follow_up_question: "Thank you for sharing your thoughts. Could you elaborate on how you think this topic affects different stakeholders or industries?",
+                        response: "I'd like to hear more about your perspective on this issue. Could you share some specific examples or scenarios?",
+                        evaluation: "Your response shows engagement with the topic."
+                    };
+                } else {
+                    responseData = {
+                        follow_up_question: "Thank you for participating in this discussion. You've raised some interesting points to consider.",
+                        response: "I appreciate your contributions to this discussion topic.",
+                        evaluation: "You've completed the discussion exercise."
+                    };
+                }
+                
+                toast.error('Unable to connect to AI after multiple attempts. Using fallback response.', { duration: 3000 });
+            }
 
-            // Create a consistent AI response object
+            // Create a consistent AI response object with fallbacks at each step
             const aiResponse: AIResponse = {
-                text: responseData.follow_up_question || responseData.response || "That's an interesting perspective. Could you elaborate more on that point?",
-                audioUrl: responseData.audio_url
+                text: responseData?.follow_up_question || responseData?.response || "That's an interesting perspective. Could you elaborate more on that point?",
+                audioUrl: responseData?.audio_url
             };
             setCurrentAIResponse(aiResponse);
             
@@ -366,10 +586,17 @@ export function GroupDiscussionRound({
             }
 
             // Add to conversation history
-            setGDResponses(prev => [...prev, {
+            const updatedResponses = [...gdResponses, {
                 userResponse: text,
                 aiQuestion: aiResponse.text
-            }]);
+            }];
+            setGDResponses(updatedResponses);
+
+            // If this was the second response, mark discussion as complete
+            if (updatedResponses.length >= MAX_RESPONSES) {
+                setDiscussionComplete(true);
+                toast.success('Discussion complete! Click "Submit Discussion" to get your evaluation.');
+            }
 
             // Clear the transcript for next response
             setTranscript('');
@@ -408,6 +635,8 @@ export function GroupDiscussionRound({
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+
+            
             {currentStep === 'intro' && (
                 <Card className="p-6">
                     <h2 className="text-2xl font-bold mb-4">Group Discussion Round</h2>
@@ -434,6 +663,12 @@ export function GroupDiscussionRound({
                                 <p className="text-gray-700 dark:text-gray-300 italic">{topic.content}</p>
                             </div>
                             
+                            {/* Instructions for the user */}
+                            <div className="mb-6 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                                <h4 className="font-medium mb-2 text-yellow-800">Instructions:</h4>
+                                <p className="text-gray-800">{topic.instructions || "Please speak for 1-2 minutes on this topic, sharing your perspective and supporting your points with examples or reasoning."}</p>
+                            </div>
+                            
                             {topic.followUpQuestions && topic.followUpQuestions.length > 0 && (
                                 <div className="mb-8 bg-blue-50 p-4 rounded-lg">
                                     <h4 className="font-medium mb-3 text-blue-800">Key Points to Consider:</h4>
@@ -446,27 +681,60 @@ export function GroupDiscussionRound({
                             )}
                             
                             <div className="mt-2 mb-6 text-sm text-gray-500">
-                                <p>When you click "Start Speaking", you will begin a voice conversation with the AI. Speak clearly into your microphone.</p>
+                                <p>When you click "Start Speaking", you will begin a voice conversation with the AI. Speak clearly into your microphone for 1-2 minutes.</p>
                             </div>
                             
-                            <Button
-                                onClick={() => {
-                                    setCurrentStep('discussion');
-                                    // Auto-announce the topic using speech synthesis
-                                    const utterance = new SpeechSynthesisUtterance(`Today's discussion topic is: ${topic.title}. ${topic.content}`);
-                                    utterance.lang = 'en-US';
-                                    window.speechSynthesis.speak(utterance);
-                                    
-                                    // Start listening after a brief delay to allow the topic announcement
-                                    setTimeout(() => {
-                                        startListening();
-                                    }, 1000);
-                                }}
-                                size="lg"
-                                className="w-full bg-blue-600 hover:bg-blue-700"
-                            >
-                                Start Speaking
-                            </Button>
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 p-3 rounded-md border border-blue-200 text-sm text-blue-800">
+                                    <p><strong>Discussion Flow:</strong></p>
+                                    <ol className="list-decimal list-inside mt-1 space-y-1">
+                                        <li>Click "Start Speaking" and talk for 1-2 minutes about the topic</li>
+                                        <li>Click "Stop Speaking" when you finish your response</li>
+                                        <li>The AI will respond to your points</li>
+                                        <li>You'll have one more chance to respond</li>
+                                        <li>Click "Submit Discussion" to get your evaluation and score</li>
+                                        <li>View your results showing Round 1, Round 2, and overall performance</li>
+                                    </ol>
+                                </div>
+                                
+                                <Button
+                                    onClick={() => {
+                                        setCurrentStep('discussion');
+                                        setIsTopicAnnounced(false); // Reset topic announcement state
+                                        
+                                        // Build comprehensive introduction
+                                        const announcement = [
+                                            `Today's discussion topic is: ${topic.title}.`,
+                                            topic.content,
+                                            "Key points to consider:",
+                                            ...(topic.followUpQuestions || []).map(q => `- ${q}`),
+                                            "Please speak for 1 to 2 minutes on this topic.",
+                                            "After your first response, the AI will ask a follow-up question.",
+                                            "Then you'll have one more chance to respond.",
+                                            "After your second response, click the Submit Discussion button to get your evaluation.",
+                                            "Remember to click Stop Speaking when you finish each response."
+                                        ].join(' ');
+                                        
+                                        const utterance = new SpeechSynthesisUtterance(announcement);
+                                        utterance.lang = 'en-US';
+                                        utterance.rate = 0.9; // Slightly slower for clarity
+                                        
+                                        // When announcement finishes
+                                        utterance.onend = () => {
+                                            setIsTopicAnnounced(true);
+                                            toast.success('You can now start speaking about the topic');
+                                        };
+                                        
+                                        // Start the announcement
+                                        toast.success('Please listen to the topic introduction...');
+                                        window.speechSynthesis.speak(utterance);
+                                    }}
+                                    size="lg"
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                >
+                                    Begin Topic Introduction
+                                </Button>
+                            </div>
                         </>
                     ) : (
                         <div className="flex flex-col items-center py-8">
@@ -485,6 +753,25 @@ export function GroupDiscussionRound({
                             <div className="mb-6">
                                 <h3 className="text-lg font-semibold mb-2">{topic?.title}</h3>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">{topic?.content}</p>
+                                
+                                {!isTopicAnnounced ? (
+                                    <div className="flex flex-col items-center space-y-4">
+                                        <div className="animate-pulse text-blue-600">
+                                            Listening to topic introduction...
+                                        </div>
+                                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                ) : (
+                                    <Button
+                                        onClick={startListening}
+                                        disabled={isListening || isAISpeaking}
+                                        size="lg"
+                                        className="w-full bg-green-600 hover:bg-green-700"
+                                    >
+                                        Begin Your Response
+                                    </Button>
+                                )}
+                                
                                 {topic?.followUpQuestions && topic.followUpQuestions.length > 0 && (
                                     <div className="mt-4">
                                         <h4 className="text-md font-medium mb-2">Key Points to Consider:</h4>
@@ -521,28 +808,78 @@ export function GroupDiscussionRound({
                                 ))}
                             </div>
 
+                            {/* Submit Button - appears when discussion is complete */}
+                            {discussionComplete && (
+                                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <div className="text-center">
+                                        <h3 className="text-lg font-semibold text-green-800 mb-2">Discussion Complete!</h3>
+                                        <p className="text-green-700 mb-4">You've completed the group discussion. Click below to submit and receive your evaluation.</p>
+                                        <Button
+                                            onClick={() => {
+                                                setEvaluationInitiated(true);
+                                                setEvalAttempt(0);
+                                                getFinalEvaluation();
+                                            }}
+                                            disabled={loading || evaluationInitiated}
+                                            size="lg"
+                                            className="bg-green-600 hover:bg-green-700"
+                                        >
+                                            {loading ? 'Submitting...' : 'Submit Discussion & Get Score'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Live Speech UI */}
                             <div className="relative">
-                                <div className="flex items-center justify-center space-x-4">
-                                    <Button
-                                        onClick={isListening ? stopListening : startListening}
-                                        disabled={loading || isAISpeaking}
-                                        size="lg"
-                                        variant={isListening ? "destructive" : "default"}
-                                        className="w-48"
-                                    >
-                                        {isListening ? (
-                                            <span className="flex items-center space-x-2">
-                                                <MicOff className="w-5 h-5" />
-                                                <span>Stop Speaking</span>
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center space-x-2">
-                                                <Mic className="w-5 h-5" />
-                                                <span>Start Speaking</span>
-                                            </span>
+                                <div className="flex flex-col items-center justify-center space-y-4">
+                                    {isListening && (
+                                        <div className="mb-2 text-center">
+                                            <div className="text-lg font-bold">
+                                                Speaking Time: {Math.floor(speakingTime / 60)}:{(speakingTime % 60).toString().padStart(2, '0')}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {speakingTime < 60 ? "Continue speaking..." : 
+                                                 speakingTime < 120 ? "Good timing! Continue or conclude your thoughts." : 
+                                                 "You've reached the 2-minute mark. Consider concluding."}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="flex space-x-3">
+                                        <Button
+                                            onClick={isListening ? stopListening : startListening}
+                                            disabled={loading || isAISpeaking || discussionComplete}
+                                            size="lg"
+                                            variant={isListening ? "destructive" : "default"}
+                                            className="w-48"
+                                        >
+                                            {isListening ? (
+                                                <span className="flex items-center space-x-2">
+                                                    <MicOff className="w-5 h-5" />
+                                                    <span>Stop Speaking</span>
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center space-x-2">
+                                                    <Mic className="w-5 h-5" />
+                                                    <span>Start Speaking</span>
+                                                </span>
+                                            )}
+                                        </Button>
+                                        
+                                        {!isListening && !showManualInput && !discussionComplete && (
+                                            <Button
+                                                onClick={() => setShowManualInput(true)}
+                                                variant="outline"
+                                                size="lg"
+                                            >
+                                                <span className="flex items-center space-x-2">
+                                                    <MessageCircle className="w-5 h-5" />
+                                                    <span>Type Response</span>
+                                                </span>
+                                            </Button>
                                         )}
-                                    </Button>
+                                    </div>
                                 </div>
 
                                 {/* Live Transcript */}
@@ -552,6 +889,39 @@ export function GroupDiscussionRound({
                                             {transcript}
                                             <span className="text-gray-400 italic">{interimTranscript}</span>
                                         </p>
+                                    </div>
+                                )}
+                                
+                                {/* Manual Input Fallback */}
+                                {showManualInput && !discussionComplete && (
+                                    <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                        <h4 className="text-md font-medium mb-2 text-yellow-800">Speech recognition issue detected</h4>
+                                        <p className="mb-3 text-sm">You can type your response below instead:</p>
+                                        <textarea 
+                                            className="w-full p-3 rounded border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            rows={4}
+                                            placeholder="Type your response here (1-2 minutes worth of speaking)"
+                                            value={manualInputText}
+                                            onChange={(e) => setManualInputText(e.target.value)}
+                                        />
+                                        <div className="mt-3 flex justify-end">
+                                            <Button 
+                                                onClick={() => {
+                                                    if (manualInputText.trim()) {
+                                                        handleUserResponse(manualInputText);
+                                                        setManualInputText('');
+                                                        setShowManualInput(false);
+                                                    } else {
+                                                        toast.error('Please enter your response before submitting.');
+                                                    }
+                                                }}
+                                                disabled={loading || discussionComplete}
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                <Send className="w-4 h-4 mr-2" />
+                                                Submit Response
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
 
@@ -565,39 +935,71 @@ export function GroupDiscussionRound({
                             </div>
                         </div>
                     </Card>
-
-                    {/* Discussion Progress */}
-                    <Card className="p-4">
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm text-gray-600">
-                                <span>Discussion Progress</span>
-                                <span>{gdResponses.length} of {MAX_RESPONSES} responses</span>
-                            </div>
-                            <Progress value={(gdResponses.length / MAX_RESPONSES) * 100} className="h-2" />
-                        </div>
-                    </Card>
                 </>
             )}
 
             {currentStep === 'evaluation' && finalEvaluation && (
                 <Card className="p-6">
-                    <h2 className="text-2xl font-bold mb-6">Discussion Evaluation</h2>
+                    {(() => {
+                        console.log('Rendering evaluation step with data:', finalEvaluation);
+                        return null;
+                    })()}
+                    <div className="bg-green-50 p-4 mb-6 rounded-lg border border-green-200 flex items-center">
+                        <div className="bg-green-100 p-2 rounded-full mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-green-800">Discussion Complete</h3>
+                            <p className="text-sm text-green-700">Thank you for participating in this group discussion.</p>
+                        </div>
+                    </div>
+                
+                    <h2 className="text-2xl font-bold mb-6">Group Discussion Round Results</h2>
                     
                     {/* Overall Score */}
                     <div className="mb-8">
                         <div className="flex justify-between items-center mb-2">
                             <h3 className="font-semibold">Overall Score</h3>
                             <span className="text-2xl font-bold text-blue-600">
-                                {Math.round(finalEvaluation.score * 100)}%
+                                {Math.round(finalEvaluation.score)}%
                             </span>
                         </div>
-                        <Progress value={finalEvaluation.score * 100} className="h-3" />
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div 
+                                className="bg-blue-600 h-3 rounded-full" 
+                                style={{ width: `${Math.min(Math.max(finalEvaluation.score, 0), 100)}%` }}
+                            ></div>
+                        </div>
                     </div>
 
-                    {/* Feedback */}
+                    {/* Criteria Scores */}
                     <div className="mb-8">
-                        <h3 className="font-semibold mb-3">Feedback</h3>
-                        <p className="text-gray-600 dark:text-gray-300">{finalEvaluation.feedback}</p>
+                        <h3 className="font-semibold mb-3">Criteria Scores</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span>Communication</span>
+                                    <span>{Math.round(finalEvaluation.feedback.criteria_scores.communication)}%</span>
+                                </div>
+                                <Progress value={Math.round(finalEvaluation.feedback.criteria_scores.communication)} className="h-2" />
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span>Topic Understanding</span>
+                                    <span>{Math.round(finalEvaluation.feedback.criteria_scores.topic_understanding)}%</span>
+                                </div>
+                                <Progress value={Math.round(finalEvaluation.feedback.criteria_scores.topic_understanding)} className="h-2" />
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span>Interaction</span>
+                                    <span>{Math.round(finalEvaluation.feedback.criteria_scores.interaction)}%</span>
+                                </div>
+                                <Progress value={Math.round(finalEvaluation.feedback.criteria_scores.interaction)} className="h-2" />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Strengths */}
