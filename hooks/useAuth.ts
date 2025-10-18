@@ -57,9 +57,26 @@ export function useAuth() {
 
   const register = async (data: any) => {
     try {
+      // Register the student
       await apiClient.registerStudent(data)
-      toast.success('Registration successful! Please login.')
-      router.push('/auth/login')
+      
+      // Automatically log in the user after successful registration
+      const loginResponse = await apiClient.login({
+        email: data.email,
+        password: data.password,
+        user_type: 'student',
+      })
+      
+      // Set auth tokens
+      apiClient.setAuthTokens(loginResponse.access_token, loginResponse.refresh_token)
+      
+      // Update user state
+      await checkAuth()
+      
+      // Redirect to student dashboard
+      router.push('/dashboard/student')
+      
+      toast.success('Registration successful! Welcome to Saksham AI!')
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Registration failed'
       toast.error(message)
