@@ -250,7 +250,7 @@ Login
 | Core Engineering | Mechanical GET, Civil GET    | 60-75 min  | Aptitude, Domain MCQ, Case Study, HR          |
 | Business/Sales   | BDE, Operations Executive    | 60 min     | Aptitude, Verbal, Situational, HR             |
 | Finance/Commerce | Analyst, Accountant          | 60 min     | Aptitude, Domain, Case Study, HR              |
-| HR/Generalist    | HR Executive, Recruiter      | 60 min     | Aptitude, HR Concepts, Interview              |
+| HR/Generalist    | HR Executive, Recruiter      | 60 min     | Aptitude, HR Concepts, Interviews              |
 
 ### Scoring System
 
