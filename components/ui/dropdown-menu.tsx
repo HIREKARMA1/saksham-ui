@@ -11,6 +11,7 @@ interface DropdownMenuProps {
 
 interface DropdownMenuTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     children: React.ReactNode
+    asChild?: boolean
 }
 
 interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -64,8 +65,22 @@ const DropdownMenu = ({ children }: DropdownMenuProps) => {
 }
 
 const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTriggerProps>(
-    ({ className, children, ...props }, ref) => {
+    ({ className, children, asChild, ...props }, ref) => {
         const { isOpen, setIsOpen } = React.useContext(DropdownMenuContext)
+
+        if (asChild) {
+            // When asChild is true, clone the child element and add the trigger functionality
+            const child = React.Children.only(children) as React.ReactElement
+            return React.cloneElement(child, {
+                ref,
+                className: cn(child.props.className, className),
+                onClick: (e: React.MouseEvent) => {
+                    setIsOpen(!isOpen)
+                    child.props.onClick?.(e)
+                },
+                ...props
+            })
+        }
 
         return (
             <button
