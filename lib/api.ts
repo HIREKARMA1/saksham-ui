@@ -15,6 +15,12 @@ class ApiClient {
     // Add request interceptor to include auth token
     this.client.interceptors.request.use(
       (config) => {
+        // Add API version prefix
+        if (!config.url?.startsWith('/api/v1/')) {
+          config.url = `/api/v1${config.url}`;
+        }
+        
+        // Add auth token
         const token = localStorage.getItem('access_token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -239,21 +245,13 @@ class ApiClient {
    * @param limit - Number of records to return (pagination)
    * @returns Assessment history
    */
-  async getStudentAssessments(skip: number = 0, limit: number = 20): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/students/assessments', {  // ✅ /students/
-      params: { skip, limit }
-    });
-    return response.data;
-  }
+  // NOTE: See the unified implementation near the bottom of the file.
 
   /**
    * Get student performance analytics
    * @returns Performance analytics data
    */
-  async getStudentAnalytics(): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/students/analytics');  // ✅ /students/
-    return response.data;
-  }
+  // NOTE: See the unified implementation near the bottom of the file.
 
   /**
    * Get subscription status and details
@@ -308,6 +306,30 @@ class ApiClient {
 
   async getAssessmentReport(assessmentId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/report`);
+    return response.data;
+  }
+
+  async getAssessmentReportWithQuestions(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/report`, {
+      params: { include: 'questions' }
+    });
+    return response.data;
+  }
+
+  async getAssessmentQA(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/qa`);
+    return response.data;
+  }
+
+  async getStudentAssessments(skip: number = 0, limit: number = 50): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/assessments', {
+      params: { skip, limit }
+    });
+    return response.data;
+  }
+
+  async getStudentAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/analytics');
     return response.data;
   }
 }

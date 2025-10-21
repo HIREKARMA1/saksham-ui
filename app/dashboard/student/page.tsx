@@ -8,6 +8,22 @@ import { Badge } from '@/components/ui/badge'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
 import { Home, User, FileText, Briefcase, ClipboardList } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+// Lazy-load Recharts on client only
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
+const LineChart = dynamic(() => import('recharts').then(m => m.LineChart), { ssr: false })
+const Line = dynamic(() => import('recharts').then(m => m.Line), { ssr: false })
+const CartesianGrid = dynamic(() => import('recharts').then(m => m.CartesianGrid), { ssr: false })
+const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false })
+const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false })
+const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip as any), { ssr: false })
+const Legend = dynamic(() => import('recharts').then(m => m.Legend as any), { ssr: false })
+const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
+const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
+const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
+const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
+const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
 import Link from 'next/link'
 
 const sidebarItems = [
@@ -20,6 +36,8 @@ const sidebarItems = [
 
 export default function StudentDashboard() {
     const [stats, setStats] = useState<any>(null)
+    const [analytics, setAnalytics] = useState<any>(null)
+    const [latestReport, setLatestReport] = useState<{ id: string | null, date: string | null }>({ id: null, date: null })
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -30,6 +48,18 @@ export default function StudentDashboard() {
         try {
             const data = await apiClient.getStudentDashboard()
             setStats(data)
+            const a = await apiClient.getStudentAnalytics()
+            setAnalytics(a)
+
+            // Fetch recent assessments and pick latest completed for Detailed Analysis
+            try {
+                const assmts = await apiClient.getStudentAssessments(0, 10)
+                const completed = (assmts?.assessments || []).filter((x: any) => String(x.status).toLowerCase() === 'completed')
+                if (completed.length > 0) {
+                    const latest = completed.sort((b: any, c: any) => new Date(c.completed_at || c.started_at).getTime() - new Date(b.completed_at || b.started_at).getTime())[0]
+                    setLatestReport({ id: latest.assessment_id, date: latest.completed_at || latest.started_at })
+                }
+            } catch (_) {}
         } catch (error) {
             console.error('Error fetching dashboard:', error)
         } finally {
@@ -108,12 +138,50 @@ export default function StudentDashboard() {
                                         Take Assessment
                                     </Button>
                                 </Link>
+                                <Link href="/dashboard/student/assessment/history">
+                                    <Button variant="outline" className="w-full justify-start">
+                                        <ClipboardList className="mr-2 h-4 w-4" />
+                                        Assessment History
+                                    </Button>
+                                </Link>
                                 <Link href="/dashboard/student/profile">
                                     <Button variant="outline" className="w-full justify-start">
                                         <User className="mr-2 h-4 w-4" />
                                         Update Profile
                                     </Button>
                                 </Link>
+                            </CardContent>
+                        </Card>
+
+                        {/* Detailed Analysis entry point */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Detailed Analysis</CardTitle>
+                                <CardDescription>
+                                    View your latest assessment report with per-question breakdown and AI insights
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <Button
+                                        disabled={!latestReport.id}
+                                        onClick={() => {
+                                            if (latestReport.id) {
+                                                window.location.href = `/dashboard/student/assessment/report?id=${latestReport.id}`
+                                            }
+                                        }}
+                                    >
+                                        {latestReport.id ? 'View Latest Report' : 'No completed assessments yet'}
+                                    </Button>
+                                    {latestReport.date && (
+                                        <span className="text-sm text-gray-500">
+                                            Last completed: {new Date(latestReport.date).toLocaleString()}
+                                        </span>
+                                    )}
+                                    <Link href="/dashboard/student/assessment/history" className="ml-auto">
+                                        <Button variant="outline">Browse All Reports</Button>
+                                    </Link>
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -137,19 +205,83 @@ export default function StudentDashboard() {
                             </Card>
                         )}
 
-                        {/* AI Analytics Placeholder */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Performance Analytics</CardTitle>
-                                <CardDescription>Detailed analytics will be available after completing assessments</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-center py-12 text-gray-500">
-                                    <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p>Complete your first assessment to see analytics</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {/* Analytics */}
+                        {analytics && analytics.total_assessments > 0 ? (
+                            <div className="grid lg:grid-cols-3 gap-6">
+                                <Card className="lg:col-span-2">
+                                    <CardHeader>
+                                        <CardTitle>Performance Trend</CardTitle>
+                                        <CardDescription>Overall score and readiness over time</CardDescription>
+                                    </CardHeader>
+                                    <CardContent style={{ height: 300 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={(analytics.trend || []).map((t: any) => ({ ...t, date: new Date(t.date).toLocaleDateString() }))}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="date" />
+                                                <YAxis domain={[0, 100]} />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Line type="monotone" dataKey="overall_score" name="Overall %" stroke="#6366f1" />
+                                                <Line type="monotone" dataKey="readiness_index" name="Readiness %" stroke="#10b981" />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Correct vs Incorrect</CardTitle>
+                                        <CardDescription>Last assessment rounds</CardDescription>
+                                    </CardHeader>
+                                    <CardContent style={{ height: 300 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie dataKey="value" data={[
+                                                    { name: 'Correct', value: analytics.correct_vs_incorrect?.correct || 0 },
+                                                    { name: 'Incorrect', value: analytics.correct_vs_incorrect?.incorrect || 0 },
+                                                ]} outerRadius={100} label>
+                                                    <Cell fill="#10b981" />
+                                                    <Cell fill="#ef4444" />
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="lg:col-span-3">
+                                    <CardHeader>
+                                        <CardTitle>Section-wise Performance</CardTitle>
+                                        <CardDescription>Percent by round in last assessment</CardDescription>
+                                    </CardHeader>
+                                    <CardContent style={{ height: 300 }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={Object.entries(analytics.section_wise || {}).map(([k, v]) => ({ section: k, percentage: v }))}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="section" />
+                                                <YAxis domain={[0, 100]} />
+                                                <Tooltip />
+                                                <Bar dataKey="percentage" fill="#6366f1" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        ) : (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Performance Analytics</CardTitle>
+                                    <CardDescription>Detailed analytics will be available after completing assessments</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-center py-12 text-gray-500">
+                                        <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p>Complete your first assessment to see analytics</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </>
                 )}
             </div>

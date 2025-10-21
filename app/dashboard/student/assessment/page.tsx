@@ -18,27 +18,32 @@ import {
     Mic,
     CheckCircle,
     Clock,
-    Target
+    Target,
+    MessageCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 // Add this helper function after imports in both files
 const extractErrorMessage = (error: any): string => {
-    if (error.response?.data?.detail) {
-        const detail = error.response.data.detail
-        
-        // If it's an array (FastAPI validation errors)
-        if (Array.isArray(detail) && detail.length > 0) {
-            return detail[0].msg || detail[0].message || 'Validation error'
+    try {
+        const resData = error?.response?.data
+        if (resData) {
+            if (typeof resData === 'string') return resData
+            if (resData.detail) {
+                const d = resData.detail
+                if (Array.isArray(d) && d.length > 0) {
+                    return d[0]?.msg || d[0]?.message || JSON.stringify(d)
+                }
+                if (typeof d === 'string') return d
+                if (typeof d === 'object') return d.message || JSON.stringify(d)
+            }
+            if (resData.message) return resData.message
+            if (resData.error) return resData.error
+            return JSON.stringify(resData)
         }
-        
-        // If it's a string
-        if (typeof detail === 'string') {
-            return detail
-        }
-    }
-    
-    return error.message || 'An error occurred'
+        if (error?.message) return error.message
+    } catch {}
+    return 'An error occurred'
 }
 
 const sidebarItems = [
@@ -68,6 +73,14 @@ const roundInfo = [
     },
     {
         number: 3,
+        name: "Group Discussion",
+        description: "Interactive discussion with AI moderator",
+        duration: "25 min",
+        icon: MessageCircle,
+        color: "bg-violet-500"
+    },
+    {
+        number: 4,
         name: "Technical MCQ",
         description: "Domain-specific questions",
         duration: "30 min",
@@ -75,7 +88,7 @@ const roundInfo = [
         color: "bg-purple-500"
     },
     {
-        number: 4,
+        number: 5,
         name: "Technical Interview",
         description: "Voice-based technical discussion",
         duration: "20 min",
@@ -83,20 +96,12 @@ const roundInfo = [
         color: "bg-orange-500"
     },
     {
-        number: 5,
+        number: 6,
         name: "HR Interview",
         description: "Behavioral and cultural fit",
         duration: "15 min",
         icon: Target,
         color: "bg-pink-500"
-    },
-    {
-        number: 6,
-        name: "Final Evaluation",
-        description: "AI analysis and report generation",
-        duration: "5 min",
-        icon: CheckCircle,
-        color: "bg-indigo-500"
     }
 ]
 
@@ -117,6 +122,17 @@ export default function AssessmentPage() {
             loadJobRoles()
         }
     }, [assessmentId])
+
+    // Refresh assessment data every 30 seconds to get updated scores
+    useEffect(() => {
+        if (assessmentId && assessment) {
+            const interval = setInterval(() => {
+                loadAssessment(assessmentId)
+            }, 30000) // 30 seconds
+            
+            return () => clearInterval(interval)
+        }
+    }, [assessmentId, assessment])
 
     const loadJobRoles = async () => {
         try {
@@ -143,7 +159,25 @@ export default function AssessmentPage() {
     const loadAssessment = async (id: string) => {
         try {
             const data = await apiClient.getAssessmentStatus(id)
-            setAssessment(data)
+            // Normalize status strings to lowercase to handle enum vs string differences
+            const normalizeStatus = (val: any) => {
+                if (val == null) return val
+                // enum objects may have a 'value' prop, otherwise toString()
+                const s = typeof val === 'string' ? val : (val.value ?? String(val))
+                return String(s).toLowerCase()
+            }
+
+            const normalized = {
+                ...data,
+                status: normalizeStatus(data.status),
+                rounds: Array.isArray(data.rounds)
+                    ? data.rounds.map((r: any) => ({
+                        ...r,
+                        status: normalizeStatus(r.status),
+                    }))
+                    : [],
+            }
+            setAssessment(normalized)
         } catch (error) {
             console.error('Error loading assessment:', error)
             toast.error('Failed to load assessment')
@@ -163,7 +197,55 @@ export default function AssessmentPage() {
             router.push(`/dashboard/student/assessment?id=${data.assessment_id}`)
         } catch (error: any) {
             console.error('❌ Error starting assessment:', error)
-            toast.error(extractErrorMessage(error))
+            const errorMsg = extractErrorMessage(error)
+            const status = error?.response?.status
+            const url = error?.config?.url || ''
+            
+            // If user already has an active assessment, try to find and resume it
+            if (
+                (typeof errorMsg === 'string' && (
+                    errorMsg.toLowerCase().includes('already has an active') ||
+                    errorMsg.toLowerCase().includes('active assessment')
+                )) ||
+                (status === 400 && String(url).includes('/assessments/start'))
+            ) {
+                console.log('🔄 User has active assessment, fetching and redirecting...')
+                toast.dismiss() // Clear any existing toasts
+                toast.loading('Loading your active assessment...')
+                
+                try {
+                    // Fetch the student's assessments to find the active one
+                    const assessmentsData = await apiClient.getStudentAssessments(0, 10)
+                    console.log('📋 Assessments data:', assessmentsData)
+                    
+                    const activeAssessment = assessmentsData.assessments?.find(
+                        (a: any) => {
+                            const status = String(a.status || '').toLowerCase()
+                            return status === 'not_started' || status === 'in_progress'
+                        }
+                    )
+                    
+                    console.log('🎯 Found active assessment:', activeAssessment)
+                    
+                    if (activeAssessment) {
+                        toast.dismiss()
+                        toast.success('Resuming your active assessment...')
+                        setTimeout(() => {
+                            router.push(`/dashboard/student/assessment?id=${activeAssessment.assessment_id}`)
+                        }, 500)
+                        return
+                    } else {
+                        toast.dismiss()
+                        toast.error('No active assessment found. Please contact support.')
+                    }
+                } catch (loadError) {
+                    console.error('Failed to load existing assessment:', loadError)
+                    toast.dismiss()
+                    toast.error('Failed to load your active assessment. Please refresh the page.')
+                }
+            } else {
+                toast.error(errorMsg)
+            }
         } finally {
             setStarting(false)
         }
@@ -225,7 +307,7 @@ export default function AssessmentPage() {
                             <CardHeader className="pb-3">
                                 <CardDescription>Completed Rounds</CardDescription>
                                 <CardTitle className="text-3xl">
-                                    {assessment.rounds?.filter((r: any) => r.status === 'completed').length || 0}/6
+                                    {assessment.rounds?.filter((r: any) => r.status === 'completed').length || 0}/5
                                 </CardTitle>
                             </CardHeader>
                         </Card>
@@ -401,7 +483,7 @@ export default function AssessmentPage() {
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                                    <p>• 6 rounds of assessment</p>
+                                    <p>• 5 rounds of assessment</p>
                                     <p>• Estimated duration: 2 hours</p>
                                     <p>• AI-powered evaluation</p>
                                     <p>• Detailed feedback and recommendations</p>
