@@ -80,6 +80,42 @@ export default function AssessmentRoundPage() {
     const assessmentId = searchParams.get('assessment_id')
     const roundNumber = parseInt(searchParams.get('round') || '1')
 
+    // Normalize options coming from different backend shapes
+    const normalizeMcqOptions = (q: any): string[] => {
+        if (!q) return []
+        // 1) Array of strings/objects
+        if (Array.isArray(q.options)) {
+            return q.options.map((o: any) => typeof o === 'string' ? o : (o?.text ?? o?.label ?? JSON.stringify(o)))
+        }
+        // 2) 'choices' array
+        if (Array.isArray(q.choices)) {
+            return q.choices.map((o: any) => typeof o === 'string' ? o : (o?.text ?? o?.label ?? JSON.stringify(o)))
+        }
+        // 3) JSON string in options/options_json
+        const jsonCandidate = q.options_json || q.options
+        if (typeof jsonCandidate === 'string') {
+            try {
+                const parsed = JSON.parse(jsonCandidate)
+                if (Array.isArray(parsed)) {
+                    return parsed.map((o: any) => typeof o === 'string' ? o : (o?.text ?? o?.label ?? JSON.stringify(o)))
+                }
+                if (parsed && typeof parsed === 'object') {
+                    const vals = Object.values(parsed as Record<string, any>)
+                    return vals.map((o: any) => typeof o === 'string' ? o : (o?.text ?? o?.label ?? JSON.stringify(o)))
+                }
+            } catch {}
+        }
+        // 4) option_a/option_b/option_c/option_d fields
+        const keySet = ['option_a','option_b','option_c','option_d']
+        const fromFields = keySet.map(k => q[k]).filter(Boolean)
+        if (fromFields.length > 0) return fromFields
+        // 5) options as object {A: '...', B: '...'}
+        if (q.options && typeof q.options === 'object') {
+            return Object.values(q.options)
+        }
+        return []
+    }
+
     const isVoiceRound = roundData?.round_type === 'technical_interview' || roundData?.round_type === 'hr_interview'
     const currentQ = roundData?.questions?.[currentQuestion]
     const counts = roundData ? getCounts() : { answered: 0, notAnswered: 0, marked: 0, notVisited: 0 }
@@ -754,32 +790,41 @@ export default function AssessmentRoundPage() {
                                 )}
 
                                 {/* ========== MCQ QUESTIONS ========== */}
-                                {currentQ.question_type === 'mcq' && currentQ.options && Array.isArray(currentQ.options) && (
-                                    <div className="space-y-2">
-                                        {currentQ.options.map((option: any, index: number) => {
-                                            const optionLetter = String.fromCharCode(65 + index)
-                                            const optionText = typeof option === 'string' ? option : JSON.stringify(option)
-                                            
-                                            return (
-                                                <label 
-                                                    key={index}
-                                                    className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name={`question-${currentQ.id}`}
-                                                        value={optionLetter}
-                                                        checked={responses[currentQ.id]?.response_text === optionLetter}
-                                                        onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
-                                                        className="w-4 h-4 text-blue-600"
-                                                    />
-                                                    <span className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
-                                                        {optionLetter}) {optionText}
-                                                    </span>
-                                                </label>
-                                            )
-                                        })}
-                                    </div>
+                                {String(currentQ.question_type || '').toLowerCase() === 'mcq' && (
+                                    (() => {
+                                        const mcqOptions = normalizeMcqOptions(currentQ)
+                                        if (!mcqOptions || mcqOptions.length === 0) {
+                                            return <div className="text-sm text-gray-500">No options available for this question.</div>
+                                        }
+                                        return (
+                                            <div className="space-y-2">
+                                                {mcqOptions.map((option: any, index: number) => {
+                                                    const optionLetter = String.fromCharCode(65 + index)
+                                                    const optionText = typeof option === 'string' 
+                                                        ? option 
+                                                        : (option?.text ?? option?.label ?? JSON.stringify(option))
+                                                    return (
+                                                        <label 
+                                                            key={index}
+                                                            className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                                                        >
+                                                            <input
+                                                                type="radio"
+                                                                name={`question-${currentQ.id}`}
+                                                                value={optionLetter}
+                                                                checked={responses[currentQ.id]?.response_text === optionLetter}
+                                                                onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                                                                className="w-4 h-4 text-blue-600"
+                                                            />
+                                                            <span className="flex-1 select-none text-gray-800" onCopy={(e) => e.preventDefault()}>
+                                                                {optionLetter}) {optionText}
+                                                            </span>
+                                                        </label>
+                                                    )
+                                                })}
+                                            </div>
+                                        )
+                                    })()
                                 )}
 
                                 {/* ========== TEXT QUESTION - Short Writing ========== */}
@@ -999,29 +1044,29 @@ export default function AssessmentRoundPage() {
                     <div className="mb-6">
                         <h3 className="font-semibold text-gray-800 mb-3">Legend</h3>
                         <div className="space-y-2 text-sm">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-6 h-6 bg-green-600 text-white rounded flex items-center justify-center text-xs font-medium">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-7 h-7 bg-green-600 text-white rounded flex items-center justify-center text-xs font-medium flex-shrink-0">
                                     {counts.answered}
                                 </div>
-                                <span>Answered</span>
+                                <span className="text-gray-700 font-medium">Answered</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <div className="w-6 h-6 bg-red-600 text-white rounded flex items-center justify-center text-xs font-medium">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-7 h-7 bg-red-600 text-white rounded flex items-center justify-center text-xs font-medium flex-shrink-0">
                                     {counts.notAnswered}
                                 </div>
-                                <span>Not Answered</span>
+                                <span className="text-gray-700 font-medium">Not Answered</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <div className="w-6 h-6 bg-purple-600 text-white rounded flex items-center justify-center text-xs font-medium">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-7 h-7 bg-purple-600 text-white rounded flex items-center justify-center text-xs font-medium flex-shrink-0">
                                     {counts.marked}
                                 </div>
-                                <span>Marked</span>
+                                <span className="text-gray-700 font-medium">Marked</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <div className="w-6 h-6 bg-gray-300 text-gray-700 rounded flex items-center justify-center text-xs font-medium">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-7 h-7 bg-gray-400 text-white rounded flex items-center justify-center text-xs font-medium flex-shrink-0">
                                     {counts.notVisited}
                                 </div>
-                                <span>Not Visited</span>
+                                <span className="text-gray-700 font-medium">Not Visited</span>
                             </div>
                         </div>
                     </div>
