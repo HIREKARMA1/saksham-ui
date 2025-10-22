@@ -307,7 +307,7 @@ export default function AssessmentPage() {
                             <CardHeader className="pb-3">
                                 <CardDescription>Completed Rounds</CardDescription>
                                 <CardTitle className="text-3xl">
-                                    {assessment.rounds?.filter((r: any) => r.status === 'completed').length || 0}/5
+                                    {assessment.rounds?.filter((r: any) => r.status === 'completed').length || 0}/{assessment.rounds?.length || 0}
                                 </CardTitle>
                             </CardHeader>
                         </Card>
