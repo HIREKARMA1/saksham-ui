@@ -584,6 +584,7 @@ export default function AssessmentRoundPage() {
             <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
                 <GroupDiscussionRound
                     roundId={roundData?.round_id || roundData?.id}
+                    assessmentId={assessmentId!}
                     onComplete={async (responses) => {
                         try {
                             setSubmitting(true);
