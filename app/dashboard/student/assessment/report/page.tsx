@@ -24,6 +24,7 @@ import {
     ResponsiveContainer
 } from 'recharts'
 import toast from 'react-hot-toast'
+import Playlist from '@/components/assessment/Playlist'
 
 // ✅ ADD THESE DEFINITIONS
 const sidebarItems = [
@@ -55,7 +56,7 @@ export default function AssessmentReportPage() {
     
     const router = useRouter()
     const searchParams = useSearchParams()
-    const assessmentId = searchParams.get('id')
+    const assessmentId = searchParams?.get('id')
 
     useEffect(() => {
         if (assessmentId) {
@@ -275,6 +276,10 @@ export default function AssessmentReportPage() {
                         <TabsTrigger value="insights">
                             <Lightbulb className="h-4 w-4 mr-2" />
                             AI Insights
+                        </TabsTrigger>
+                        <TabsTrigger value="playlist">
+                            <Eye className="h-4 w-4 mr-2" />
+                            Playlist
                         </TabsTrigger>
                     </TabsList>
 
@@ -587,6 +592,15 @@ export default function AssessmentReportPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+                        )}
+                    </TabsContent>
+
+                    {/* Playlist Tab */}
+                    <TabsContent value="playlist" className="space-y-6">
+                        {assessmentId ? (
+                            <Playlist assessmentId={assessmentId} />
+                        ) : (
+                            <div className="text-gray-600">No assessment selected</div>
                         )}
                     </TabsContent>
                 </Tabs>

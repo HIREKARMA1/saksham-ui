@@ -2,52 +2,47 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import React from 'react'
 import { LucideIcon } from 'lucide-react'
 
 interface SidebarItem {
-    name: string
-    href: string
-    icon: LucideIcon
+  name: string
+  href: string
+  icon: LucideIcon
 }
 
 interface SidebarProps {
-    items: SidebarItem[]
+  items: SidebarItem[]
 }
 
 export function Sidebar({ items }: SidebarProps) {
-    const pathname = usePathname()
+  const pathname = usePathname() ?? ''
 
-    return (
-        <aside className="w-64 border-r bg-white dark:bg-gray-800 h-[calc(100vh-73px)] overflow-y-auto">
-            <nav className="p-4 space-y-2">
-                {items.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+  return (
+    <aside className="w-60 bg-white border-r min-h-screen hidden md:block">
+      <div className="p-6">
+        <nav className="space-y-1">
+          {items.map((item) => {
+            const Icon = item.icon as React.ComponentType<any>
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
 
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-                                isActive
-                                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-medium'
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            )}
-                        >
-                            <Icon className="h-5 w-5" />
-                            <span>{item.name}</span>
-                        </Link>
-                    )
-                })}
-            </nav>
-        </aside>
-    )
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium ${
+                  isActive ? 'bg-gray-100 text-primary-600' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className={`p-2 rounded-md ${isActive ? 'bg-primary-100 text-primary-600' : 'text-gray-500'}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+    </aside>
+  )
 }
-
-
-
-
-
-

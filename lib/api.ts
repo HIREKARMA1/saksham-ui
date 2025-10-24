@@ -321,6 +321,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getAssessmentPlaylist(assessmentId: string, max_results: number = 6): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/playlist`, { params: { max_results } });
+    return response.data;
+  }
+
   async getStudentAssessments(skip: number = 0, limit: number = 50): Promise<any> {
     const response: AxiosResponse = await this.client.get('/students/assessments', {
       params: { skip, limit }

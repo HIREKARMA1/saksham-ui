@@ -95,8 +95,8 @@ export default function AssessmentRoundPage() {
     
     const router = useRouter()
     const searchParams = useSearchParams()
-    const assessmentId = searchParams.get('assessment_id')
-    const roundNumber = parseInt(searchParams.get('round') || '1')
+    const assessmentId = searchParams?.get('assessment_id')
+    const roundNumber = parseInt(searchParams?.get('round') || '1')
 
     // Normalize options coming from different backend shapes
     const normalizeMcqOptions = (q: any): string[] => {

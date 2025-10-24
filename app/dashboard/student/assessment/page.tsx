@@ -113,7 +113,7 @@ export default function AssessmentPage() {
     const [starting, setStarting] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
-    const assessmentId = searchParams.get('id')
+    const assessmentId = searchParams?.get('id')
 
     useEffect(() => {
         if (assessmentId) {
