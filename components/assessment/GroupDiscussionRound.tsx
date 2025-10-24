@@ -84,11 +84,13 @@ interface AssessmentResponse {
 
 interface GroupDiscussionRoundProps {
     roundId: string;
+    assessmentId?: string;  // Optional: will fallback to URL param
     onComplete: (responses: AssessmentResponse[]) => void;
 }
 
 export function GroupDiscussionRound({ 
-    roundId, 
+    roundId,
+    assessmentId: propAssessmentId,
     onComplete 
 }: GroupDiscussionRoundProps) {
     const router = useRouter();
@@ -258,102 +260,68 @@ export function GroupDiscussionRound({
     const [evaluationInitiated, setEvaluationInitiated] = useState(false);
 
     const getFinalEvaluation = async () => {
-        if (loading || currentStep === 'evaluation') {
-            return;
-        }
-
-        if (evalAttempt >= maxEvalRetries) {
-            setEvaluationInitiated(false);
-            setFinalEvaluation({
-                score: 70,
-                feedback: {
-                    criteria_scores: {
-                        communication: 70,
-                        topic_understanding: 70,
-                        interaction: 70
-                    },
-                    strengths: ['Participated in discussion'],
-                    improvements: ['Provide more detailed examples']
-                },
-                areasOfImprovement: ['Provide more detailed examples'],
-                strengths: ['Participated in discussion']
-            });
-            setCurrentStep('evaluation');
+        if (loading) {
             return;
         }
 
         try {
             setLoading(true);
-            const response = await Promise.race([
-                apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-            ]) as { data: any };
+            toast.loading('Submitting your discussion...', { id: 'submitting' });
             
-            const evalData = response.data;
-            if (!evalData) {
-                throw new Error('No evaluation data');
+            // Get assessment ID from prop or URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const assessmentId = propAssessmentId || urlParams.get('assessment_id') || urlParams.get('id');
+            
+            if (!assessmentId) {
+                console.error('Assessment ID not found. URL params:', Object.fromEntries(urlParams));
+                throw new Error('Assessment ID not found in props or URL');
             }
             
-            setEvaluationInitiated(false);
-
-            const evaluation = {
-                score: parseInt(evalData.score) || 75,
-                feedback: {
-                    criteria_scores: {
-                        communication: parseInt(evalData.feedback?.criteria_scores?.communication) || 75,
-                        topic_understanding: parseInt(evalData.feedback?.criteria_scores?.topic_understanding) || 75,
-                        interaction: parseInt(evalData.feedback?.criteria_scores?.interaction) || 75
-                    },
-                    strengths: evalData.feedback?.strengths || [],
-                    improvements: evalData.feedback?.improvements || []
-                },
-                areasOfImprovement: evalData.feedback?.improvements || [],
-                strengths: evalData.feedback?.strengths || []
-            };
-            
-            setFinalEvaluation(evaluation);
-            setCurrentStep('evaluation');
-            
-            onComplete([{
+            // STEP 1: Save full conversation transcript via API
+            const submitPayload = [{
                 response_text: JSON.stringify({
-                    responses: gdResponses,
-                    evaluation: evaluation
+                    turns: gdTurns,  // Complete conversation history
+                    responses: gdResponses  // Legacy format kept for compatibility
                 }),
-                score: evaluation.score,
+                score: 0,
                 time_taken: 0
-            }]);
+            }];
+            console.log('GD submit payload preview', {
+                assessmentId,
+                roundId,
+                turns: gdTurns.length,
+                responses: gdResponses.length,
+                payloadSize: JSON.stringify(submitPayload[0].response_text).length
+            });
 
-            toast.success('Evaluation complete!');
-        } catch (error) {
-            console.error('Error getting evaluation:', error);
-            setEvalAttempt(prev => prev + 1);
+            const submitRes = await apiClient.submitRoundResponses(
+                assessmentId,
+                roundId,
+                submitPayload
+            );
+            console.log('GD submit result', submitRes);
             
-            if (evalAttempt < maxEvalRetries) {
-                toast.error('Retrying evaluation...');
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                setLoading(false);
-                getFinalEvaluation();
-                return;
+            // STEP 2: Call evaluate endpoint in background (evaluation will be stored in DB)
+            try {
+                await Promise.race([
+                    apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
+                        conversation: gdTurns  // Send complete conversation to backend
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
+                ]);
+                
+                toast.success('Discussion submitted successfully!', { id: 'submitting' });
+            } catch (evalError) {
+                console.warn('Evaluation in background failed, but responses saved:', evalError);
+                toast.success('Discussion submitted! Evaluation will be completed shortly.', { id: 'submitting' });
             }
             
-            const fallbackEvaluation = {
-                score: 70,
-                feedback: {
-                    criteria_scores: {
-                        communication: 70,
-                        topic_understanding: 70,
-                        interaction: 70
-                    },
-                    strengths: ['Participated in discussion'],
-                    improvements: ['Provide more examples']
-                },
-                areasOfImprovement: ['Provide more examples'],
-                strengths: ['Participated in discussion']
-            };
+            // Redirect to assessment page - user will see evaluation in report
+            router.push(`/dashboard/student/assessment?id=${assessmentId}`);
             
-            setFinalEvaluation(fallbackEvaluation);
-            setCurrentStep('evaluation');
-        } finally {
+        } catch (error) {
+            console.error('Error submitting discussion:', error);
+            toast.error('Failed to submit discussion. Please try again.', { id: 'submitting' });
             setLoading(false);
         }
     };
@@ -1355,12 +1323,11 @@ export function GroupDiscussionRound({
                                                 </div>
                                                 <h3 className="text-2xl font-bold text-green-800 dark:text-green-400 mb-3">Discussion Complete! 🎉</h3>
                                                 <p className="text-green-700 dark:text-green-300 mb-6">
-                                                    You've completed {gdTurns.length} rounds. Click below to receive your evaluation.
+                                                    You've completed {gdTurns.length} rounds. Click below to submit your discussion. You'll see your evaluation in the assessment report.
                                                 </p>
                                                 <Button
                                                     onClick={() => {
                                                         setEvaluationInitiated(true);
-                                                        setEvalAttempt(0);
                                                         getFinalEvaluation();
                                                     }}
                                                     disabled={loading || evaluationInitiated}
@@ -1373,7 +1340,7 @@ export function GroupDiscussionRound({
                                                             <span>Submitting...</span>
                                                         </span>
                                                     ) : (
-                                                        '🎯 Submit & Get Evaluation'
+                                                        '✅ Submit Discussion'
                                                     )}
                                                 </Button>
                                             </div>
