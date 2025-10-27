@@ -437,67 +437,46 @@ export default function AssessmentReportPage() {
 
                 {/* Enhanced Tabs with Better Navigation */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-<<<<<<< HEAD
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="overview">
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            Overview
-                        </TabsTrigger>
-                        <TabsTrigger value="detailed">
-                            <Eye className="h-4 w-4 mr-2" />
-                            Detailed Analysis
-                        </TabsTrigger>
-                        <TabsTrigger value="questions">
-                            <ClipboardList className="h-4 w-4 mr-2" />
-                            All Questions
-                        </TabsTrigger>
-                        <TabsTrigger value="insights">
-                            <Lightbulb className="h-4 w-4 mr-2" />
-                            AI Insights
-                        </TabsTrigger>
-                        <TabsTrigger value="playlist">
-                            <Eye className="h-4 w-4 mr-2" />
-                            Playlist
-                        </TabsTrigger>
-                    </TabsList>
-=======
-                    <div className="flex items-center justify-between mb-4">
-                        <TabsList className="grid grid-cols-5 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-                            <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                Overview
-                            </TabsTrigger>
-                            <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
-                                <Activity className="h-4 w-4 mr-2" />
-                                Analytics
-                            </TabsTrigger>
-                            <TabsTrigger value="detailed" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
-                                <Eye className="h-4 w-4 mr-2" />
-                                Rounds
-                            </TabsTrigger>
-                            <TabsTrigger value="questions" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
-                                <ClipboardList className="h-4 w-4 mr-2" />
-                                Questions
-                            </TabsTrigger>
-                            <TabsTrigger value="insights" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
-                                <Brain className="h-4 w-4 mr-2" />
-                                AI Insights
-                            </TabsTrigger>
-                        </TabsList>
-                        
-                        {/* Filter Toggle Button */}
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setShowFilters(!showFilters)}
-                            className="flex items-center gap-2"
-                        >
-                            <Filter className="h-4 w-4" />
-                            Filters
-                            {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                    </div>
->>>>>>> c1dd3c4f99e4338e84590fbb0ef2d73951963ceb
+<div className="flex items-center justify-between mb-4">
+    <TabsList className="grid grid-cols-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+        <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Overview
+        </TabsTrigger>
+        <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <Activity className="h-4 w-4 mr-2" />
+            Analytics
+        </TabsTrigger>
+        <TabsTrigger value="detailed" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <Eye className="h-4 w-4 mr-2" />
+            Rounds
+        </TabsTrigger>
+        <TabsTrigger value="questions" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Questions
+        </TabsTrigger>
+        <TabsTrigger value="insights" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <Brain className="h-4 w-4 mr-2" />
+            AI Insights
+        </TabsTrigger>
+        <TabsTrigger value="playlist" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Learning
+        </TabsTrigger>
+    </TabsList>
+    
+    {/* Filter Toggle Button */}
+    <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => setShowFilters(!showFilters)}
+        className="flex items-center gap-2"
+    >
+        <Filter className="h-4 w-4" />
+        Filters
+        {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+    </Button>
+</div>
 
                     {/* Advanced Filters Panel */}
                     {showFilters && (
@@ -1572,6 +1551,7 @@ export default function AssessmentReportPage() {
                                 Update Profile
                             </Button>
                         </div>
+                        <Playlist assessmentId={assessmentId ?? ''} />
                     </CardContent>
                 </Card>
             </div>
