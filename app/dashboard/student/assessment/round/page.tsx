@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { GroupDiscussionRound } from '@/components/assessment/GroupDiscussionRound'
+import CodingRound from '@/components/assessment/CodingRound'
 
 interface GDResponse {
     response_text: string;
@@ -54,26 +55,30 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Assessments', href: '/dashboard/student/assessment', icon: ClipboardList },
 ]
 
+// Default labels by round number (used only as a fallback)
 const roundNames = {
     1: "Aptitude Test",
     2: "Soft Skills Assessment", 
     3: "Group Discussion",
     4: "Technical MCQ",
-    5: "Technical Interview",
-    6: "HR Interview"
+    5: "Coding Challenge",
+    6: "Technical Interview",
+    7: "HR Interview"
 }
 
-// Map frontend round numbers to backend round types
+// Historical mapping used when backend round_type isn't loaded yet.
+// Do NOT rely on this for logic after data loads because non-technical roles
+// use technical_interview at round 5 instead of coding.
 const roundTypeMap = {
     1: 'aptitude',
     2: 'soft_skills',
     3: 'group_discussion',
     4: 'technical_mcq',
-    5: 'technical_interview',
-    6: 'hr_interview'
+    5: 'coding',
+    6: 'technical_interview',
+    7: 'hr_interview'
 }
 
 export default function AssessmentRoundPage() {
@@ -95,8 +100,8 @@ export default function AssessmentRoundPage() {
     
     const router = useRouter()
     const searchParams = useSearchParams()
-    const assessmentId = searchParams.get('assessment_id')
-    const roundNumber = parseInt(searchParams.get('round') || '1')
+    const assessmentId = searchParams?.get('assessment_id')
+    const roundNumber = parseInt(searchParams?.get('round') || '1')
 
     // Normalize options coming from different backend shapes
     const normalizeMcqOptions = (q: any): string[] => {
@@ -133,9 +138,11 @@ export default function AssessmentRoundPage() {
         }
         return []
     }
-    const roundType = roundTypeMap[roundNumber as keyof typeof roundTypeMap]
+    // Prefer backend-provided round_type; fall back to numeric guess only during initial load
+    const roundType = (roundData?.round_type as string) || roundTypeMap[roundNumber as keyof typeof roundTypeMap]
     const isVoiceRound = roundType === 'technical_interview' || roundType === 'hr_interview'
     const isGroupDiscussionRound = roundType === 'group_discussion'
+    const isCodingRound = roundType === 'coding'
     const currentQ = roundData?.questions?.[currentQuestion]
     const counts = roundData ? getCounts() : { answered: 0, notAnswered: 0, marked: 0, notVisited: 0 }
     const canSubmit = roundData && !submitting
@@ -584,6 +591,7 @@ export default function AssessmentRoundPage() {
             <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
                 <GroupDiscussionRound
                     roundId={roundData?.round_id || roundData?.id}
+                    assessmentId={assessmentId!}
                     onComplete={async (responses) => {
                         try {
                             setSubmitting(true);
@@ -607,6 +615,33 @@ export default function AssessmentRoundPage() {
                 />
             </DashboardLayout>
         );
+    }
+
+    // Coding Round UI
+    if (isCodingRound) {
+        return (
+            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+                <div className="min-h-screen bg-gray-100">
+                    {/* Header */}
+                    <div className="bg-indigo-600 text-white p-4">
+                        <div className="flex justify-between items-center max-w-7xl mx-auto">
+                            <h1 className="text-xl font-semibold">Round {roundNumber}: Coding Challenge</h1>
+                            <div className="text-sm">Time Left: {formatTime(timeLeft)}</div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto p-6">
+                        <CodingRound
+                            assessmentId={assessmentId!}
+                            roundData={roundData}
+                            onSubmitted={() => {
+                                router.push(`/dashboard/student/assessment?id=${assessmentId}`)
+                            }}
+                        />
+                    </div>
+                </div>
+            </DashboardLayout>
+        )
     }
 
     if (!roundData || (!isGroupDiscussionRound && (!roundData.questions || roundData.questions.length === 0))) {
@@ -791,7 +826,20 @@ export default function AssessmentRoundPage() {
             <div className="bg-green-600 text-white p-4">
                 <div className="flex justify-between items-center max-w-7xl mx-auto">
                     <h1 className="text-xl font-semibold">
-                        Round {roundNumber}: {roundNames[roundNumber as keyof typeof roundNames]}
+                        {/* Use the backend type for correct naming in non-tech vs tech flows */}
+                        {(() => {
+                            const typeDisplayMap: Record<string, string> = {
+                                aptitude: 'Aptitude Test',
+                                soft_skills: 'Soft Skills Assessment',
+                                group_discussion: 'Group Discussion',
+                                technical_mcq: 'Technical MCQ',
+                                coding: 'Coding Challenge',
+                                technical_interview: 'Technical Interview',
+                                hr_interview: 'HR Interview',
+                            }
+                            const title = typeDisplayMap[roundType] || roundNames[roundNumber as keyof typeof roundNames]
+                            return <>Round {roundNumber}: {title}</>
+                        })()}
                     </h1>
                     <div className="flex items-center space-x-6">
                         <div className="text-right">
