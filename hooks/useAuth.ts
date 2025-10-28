@@ -41,6 +41,8 @@ export function useAuth() {
       })
       
       apiClient.setAuthTokens(response.access_token, response.refresh_token)
+      // Store token expiry (30 minutes from now)
+      localStorage.setItem('token_expiry', String(Date.now() + 30 * 60 * 1000))
       
       await checkAuth()
       
@@ -69,6 +71,8 @@ export function useAuth() {
       
       // Set auth tokens
       apiClient.setAuthTokens(loginResponse.access_token, loginResponse.refresh_token)
+      // Store token expiry (30 minutes from now)
+      localStorage.setItem('token_expiry', String(Date.now() + 30 * 60 * 1000))
       
       // Update user state
       await checkAuth()

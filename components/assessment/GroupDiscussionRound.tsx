@@ -301,23 +301,33 @@ export function GroupDiscussionRound({
             );
             console.log('GD submit result', submitRes);
             
-            // STEP 2: Call evaluate endpoint in background (evaluation will be stored in DB)
+            // STEP 2: Call evaluate endpoint to complete the round and get score
             try {
-                await Promise.race([
-                    apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
-                        conversation: gdTurns  // Send complete conversation to backend
-                    }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
-                ]);
+                toast.loading('Evaluating your discussion...', { id: 'evaluating' });
                 
-                toast.success('Discussion submitted successfully!', { id: 'submitting' });
+                const evalResponse = await apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
+                    conversation: gdTurns  // Send complete conversation to backend
+                });
+                
+                console.log('Evaluation complete:', evalResponse.data);
+                
+                // Wait a moment to ensure database commit is complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                toast.dismiss('submitting');
+                toast.dismiss('evaluating');
+                toast.success('Discussion evaluated successfully!', { duration: 3000 });
             } catch (evalError) {
-                console.warn('Evaluation in background failed, but responses saved:', evalError);
-                toast.success('Discussion submitted! Evaluation will be completed shortly.', { id: 'submitting' });
+                console.error('Evaluation failed:', evalError);
+                toast.dismiss('evaluating');
+                toast.error('Evaluation failed. Please contact support.', { id: 'evaluating' });
             }
             
-            // Redirect to assessment page - user will see evaluation in report
-            router.push(`/dashboard/student/assessment?id=${assessmentId}`);
+            // Redirect to assessment page and force a fresh fetch of statuses
+            // Using full navigation avoids stale state when returning to the same route
+            setTimeout(() => {
+                window.location.href = `/dashboard/student/assessment?id=${assessmentId}&ts=${Date.now()}`;
+            }, 1500);
             
         } catch (error) {
             console.error('Error submitting discussion:', error);
@@ -525,7 +535,7 @@ export function GroupDiscussionRound({
                 stream.getTracks().forEach(track => track.stop());
                 setMicTested(true);
                 toast.success('Microphone test complete!');
-            }, 3000);
+            }, 6000);
         } catch (error) {
             console.error('Mic test error:', error);
             toast.error('Could not access microphone');
@@ -761,7 +771,7 @@ export function GroupDiscussionRound({
                 setDiscussionComplete(true);
                 toast.success('Discussion complete! Click Submit for evaluation.');
             } else {
-                toast.success(`Round ${gdTurns.length + 1} complete! Continue or submit.`, { duration: 3000 });
+                toast.success(`Round ${gdTurns.length + 1} complete! Continue or submit.`, { duration: 6000 });
             }
 
             setTranscript('');

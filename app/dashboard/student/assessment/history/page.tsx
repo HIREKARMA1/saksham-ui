@@ -23,7 +23,6 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Assessments', href: '/dashboard/student/assessment', icon: ClipboardList },
 ]
 
 export default function AssessmentHistoryPage() {
@@ -82,7 +81,9 @@ export default function AssessmentHistoryPage() {
     // Filter assessments
     const filteredAssessments = history.assessments.filter((a: any) => {
         if (filter === 'all') return true
-        return a.status === filter
+        const status = String(a.status || '').toLowerCase()
+        const filterLower = filter.toLowerCase()
+        return status === filterLower || status.replace('_', '') === filterLower.replace('_', '')
     })
 
     return (
@@ -265,10 +266,10 @@ export default function AssessmentHistoryPage() {
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <CardTitle className="text-xl">{assessment.job_role?.title}</CardTitle>
                                                     <Badge 
-                                                        variant={assessment.status === 'completed' ? 'default' : 'secondary'}
+                                                        variant={String(assessment.status).toLowerCase() === 'completed' ? 'default' : 'secondary'}
                                                         className="text-xs"
                                                     >
-                                                        {assessment.status === 'completed' ? '✓ Completed' : '⏳ In Progress'}
+                                                        {String(assessment.status).toLowerCase() === 'completed' ? '✓ Completed' : '⏳ In Progress'}
                                                     </Badge>
                                                 </div>
                                                 <CardDescription className="flex items-center gap-2">

@@ -1,5 +1,10 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosProgressEvent } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosProgressEvent, InternalAxiosRequestConfig } from 'axios';
 import { config } from './config';
+
+// Extend Axios config to include custom properties
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 class ApiClient {
   public client: AxiosInstance;
@@ -7,6 +12,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: config.api.fullUrl,
+      timeout: 60000, // 60 second timeout
       headers: {
         'Content-Type': 'application/json',
       },
@@ -14,7 +20,7 @@ class ApiClient {
 
     // Add request interceptor to include auth token
     this.client.interceptors.request.use(
-      (config) => {
+      async (config: CustomAxiosRequestConfig) => {
         // Add API version prefix
         if (!config.url?.startsWith('/api/v1/')) {
           config.url = `/api/v1${config.url}`;
@@ -25,6 +31,29 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Skip proactive refresh for refresh token endpoint itself to prevent infinite loop
+        if (config.url?.includes('/auth/refresh')) {
+          return config;
+        }
+        
+        // Check if token is about to expire and refresh proactively
+        const tokenExpiry = localStorage.getItem('token_expiry');
+        if (tokenExpiry && Date.now() > parseInt(tokenExpiry) - 60000) { // Refresh 1 minute before expiry
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (refreshToken) {
+            try {
+              const response = await this.refreshToken(refreshToken);
+              localStorage.setItem('access_token', response.access_token);
+              localStorage.setItem('refresh_token', response.refresh_token);
+              localStorage.setItem('token_expiry', String(Date.now() + 30 * 60 * 1000)); // 30 minutes
+              config.headers.Authorization = `Bearer ${response.access_token}`;
+            } catch (error) {
+              console.warn('Token refresh failed, continuing with existing token');
+            }
+          }
+        }
+        
         return config;
       },
       (error) => {
@@ -36,7 +65,7 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
-        const originalRequest = error.config;
+        const originalRequest: CustomAxiosRequestConfig = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
@@ -285,6 +314,16 @@ class ApiClient {
     return response.data;
   }
 
+  async executeCode(assessmentId: string, roundId: string, payload: {question_id: string; language: string; code: string; stdin?: string}): Promise<any> {
+    // Judge0 executions can take longer; override the default 30s client timeout for this call
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/rounds/${roundId}/code/execute`,
+      payload,
+      { timeout: 60000 } // 60s
+    );
+    return response.data;
+  }
+
   async submitVoiceResponse(assessmentId: string, roundId: string, formData: FormData): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/rounds/${roundId}/voice-response`, formData, {
       headers: {
@@ -318,6 +357,11 @@ class ApiClient {
 
   async getAssessmentQA(assessmentId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/qa`);
+    return response.data;
+  }
+
+  async getAssessmentPlaylist(assessmentId: string, max_results: number = 6): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/playlist`, { params: { max_results } });
     return response.data;
   }
 

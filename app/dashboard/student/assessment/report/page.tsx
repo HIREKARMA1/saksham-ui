@@ -17,7 +17,8 @@ import {
     Award, BarChart3, PieChart, LineChart, Eye, Users, MessageCircle,
     Filter, ZoomIn, Sparkles, Trophy, Clock, Calendar,
     Activity, TrendingDown, Info, ChevronDown, ChevronUp,
-    Star, Zap, ShieldCheck, BookOpen, ArrowUpRight, ArrowDownRight
+    Star, Zap, ShieldCheck, BookOpen, ArrowUpRight, ArrowDownRight,
+    PlayCircle
 } from 'lucide-react'
 import { 
     RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -28,23 +29,41 @@ import {
     Scatter, ScatterChart, ZAxis, Funnel, FunnelChart, LabelList
 } from 'recharts'
 import toast from 'react-hot-toast'
+import PlaylistTab from '@/components/assessment/report/PlaylistTab'
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Assessments', href: '/dashboard/student/assessment', icon: ClipboardList },
 ]
 
-const roundInfo = [
-    { number: 1, name: "Aptitude Test", icon: Brain, color: "bg-blue-500", gradient: "from-blue-400 to-blue-600" },
-    { number: 2, name: "Soft Skills", icon: User, color: "bg-green-500", gradient: "from-green-400 to-green-600" },
-    { number: 3, name: "Group Discussion", icon: Users, color: "bg-teal-500", gradient: "from-teal-400 to-teal-600" },
-    { number: 4, name: "Technical MCQ", icon: ClipboardList, color: "bg-purple-500", gradient: "from-purple-400 to-purple-600" },
-    { number: 5, name: "Technical Interview", icon: Mic, color: "bg-orange-500", gradient: "from-orange-400 to-orange-600" },
-    { number: 6, name: "HR Interview", icon: Target, color: "bg-pink-500", gradient: "from-pink-400 to-pink-600" }
-]
+// Map by round_type for correct labeling across tech/non-tech flows
+const roundTypeInfo: Record<string, { name: string; icon: any; color: string; gradient: string }> = {
+    aptitude: { name: "Aptitude Test", icon: Brain, color: "bg-blue-500", gradient: "from-blue-400 to-blue-600" },
+    soft_skills: { name: "Soft Skills", icon: User, color: "bg-green-500", gradient: "from-green-400 to-green-600" },
+    group_discussion: { name: "Group Discussion", icon: Users, color: "bg-teal-500", gradient: "from-teal-400 to-teal-600" },
+    technical_mcq: { name: "Technical MCQ", icon: ClipboardList, color: "bg-purple-500", gradient: "from-purple-400 to-purple-600" },
+    coding: { name: "Coding Challenge", icon: BookOpen, color: "bg-indigo-500", gradient: "from-indigo-400 to-indigo-600" },
+    technical_interview: { name: "Technical Interview", icon: Mic, color: "bg-orange-500", gradient: "from-orange-400 to-orange-600" },
+    hr_interview: { name: "HR Interview", icon: Target, color: "bg-pink-500", gradient: "from-pink-400 to-pink-600" }
+}
+
+// Fallback names by number (used only when type is unavailable)
+const roundNumberNames = new Map<number, string>([
+    [1, "Aptitude Test"],
+    [2, "Soft Skills"],
+    [3, "Group Discussion"],
+    [4, "Technical MCQ"],
+    [5, "Coding Challenge"],
+    [6, "Technical Interview"],
+    [7, "HR Interview"],
+])
+
+const getRoundName = (round: any) => {
+    if (!round) return "Round"
+    return roundTypeInfo[round.round_type]?.name || roundNumberNames.get(round.round_number) || `Round ${round.round_number}`
+}
 
 const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#06b6d4']
 
@@ -78,6 +97,7 @@ export default function AssessmentReportPage() {
     const [report, setReport] = useState<any>(null)
     const [qaData, setQaData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState('overview')
     const [selectedRound, setSelectedRound] = useState<number | null>(null)
     const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
@@ -88,37 +108,54 @@ export default function AssessmentReportPage() {
     
     const router = useRouter()
     const searchParams = useSearchParams()
-    const assessmentId = searchParams.get('id')
+    const assessmentId = searchParams?.get('id')
 
     useEffect(() => {
-        if (assessmentId) {
-            loadReport()
-            loadQAData()
-        } else {
+        if (!assessmentId) {
             router.push('/dashboard/student/assessment')
+            return
         }
-    }, [assessmentId])
 
-    const loadReport = async () => {
-        try {
-            const data = await apiClient.getAssessmentReportWithQuestions(assessmentId!)
-            setReport(data)
-        } catch (error) {
-            console.error('Error loading report:', error)
-            toast.error('Failed to load assessment report')
-        } finally {
-            setLoading(false)
-        }
-    }
+        const loadReport = async () => {
+            setLoading(true)
+            try {
+                const data = await apiClient.getAssessmentReportWithQuestions(assessmentId)
+                setReport(data)
+                setError(null)
+            } catch (error: any) {
+                // Print the full error object for debugging
+                console.error('Error loading report (full object):', error)
+                // Defensive: check all possible Axios error shapes
+                const status = error?.response?.status || error?.status || error?.code || error?.response?.data?.status;
+                const errorMsg = error?.response?.data?.detail || error?.message || error?.toString() || 'Failed to load assessment report';
 
-    const loadQAData = async () => {
-        try {
-            const data = await apiClient.getAssessmentQA(assessmentId!)
-            setQaData(data)
-        } catch (error) {
-            console.error('Error loading Q&A data:', error)
+                // Treat HTTP 400 from the report endpoint as "assessment not completed" as a safe default
+                if (status === 400 || status === '400' || String(errorMsg).toLowerCase().includes('not completed')) {
+                    setError('incomplete')
+                    // Don't toast for expected incomplete state
+                    return
+                }
+
+                // Fallback: show generic error
+                setError(errorMsg)
+                toast.error(errorMsg)
+            } finally {
+                setLoading(false)
+            }
         }
-    }
+
+        const loadQAData = async () => {
+            try {
+                const data = await apiClient.getAssessmentQA(assessmentId)
+                setQaData(data)
+            } catch (error) {
+                console.error('Error loading Q&A data:', error)
+            }
+        }
+
+        loadReport()
+        loadQAData()
+    }, [assessmentId, router])
 
     const calculateStats = () => {
         if (!qaData?.rounds) return null
@@ -154,7 +191,7 @@ export default function AssessmentReportPage() {
         if (!report?.rounds) return []
         
         return report.rounds.map((round: any) => ({
-            subject: roundInfo.find(r => r.number === round.round_number)?.name || `Round ${round.round_number}`,
+            subject: getRoundName(round),
             score: round.percentage || 0,
             fullMark: 100,
             roundNumber: round.round_number
@@ -166,7 +203,7 @@ export default function AssessmentReportPage() {
         if (!report?.rounds) return []
         
         return report.rounds.map((round: any, index: number) => ({
-            round: roundInfo.find(r => r.number === round.round_number)?.name || `R${round.round_number}`,
+            round: getRoundName(round),
             score: round.percentage || 0,
             cumulative: report.rounds.slice(0, index + 1).reduce((acc: number, r: any) => acc + (r.percentage || 0), 0) / (index + 1),
             target: 75
@@ -191,7 +228,7 @@ export default function AssessmentReportPage() {
         const sortedRounds = [...report.rounds].sort((a: any, b: any) => b.percentage - a.percentage)
         return sortedRounds.map((round: any) => ({
             value: round.percentage,
-            name: roundInfo.find(r => r.number === round.round_number)?.name || `Round ${round.round_number}`,
+            name: getRoundName(round),
             fill: COLORS[round.round_number % COLORS.length]
         }))
     }
@@ -274,9 +311,175 @@ export default function AssessmentReportPage() {
         )
     }
 
+    // Show incomplete assessment UI
+    if (error === 'incomplete') {
+        return (
+            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+                <div className="space-y-6 pb-8 max-w-4xl mx-auto">
+                    {/* Back Button */}
+                    <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => router.push('/dashboard/student/assessment')}
+                        className="group"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                        Back to Assessments
+                    </Button>
+
+                    {/* Incomplete Assessment Banner */}
+                    <div className="relative overflow-hidden rounded-2xl border-2 border-orange-500/50 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 dark:from-orange-950/20 dark:via-red-950/20 dark:to-pink-950/20 p-8 shadow-xl">
+                        {/* Animated Background Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-pink-500/5 animate-gradient-x"></div>
+                        
+                        <div className="relative z-10 space-y-6">
+                            {/* Header with Icon */}
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-orange-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
+                                        <div className="relative bg-gradient-to-br from-orange-500 to-red-600 p-4 rounded-full">
+                                            <AlertCircle className="h-8 w-8 text-white animate-bounce" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                                        Assessment Not Completed
+                                    </h2>
+                                    <p className="text-lg text-gray-700 dark:text-gray-300">
+                                        Your assessment is still in progress. Complete all rounds to view your detailed performance report.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Information Cards */}
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/50">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Why Complete?</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Finish all assessment rounds to unlock your comprehensive performance analytics, strengths, and personalized recommendations.
+                                    </p>
+                                </div>
+
+                                <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/50">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">What You'll Get</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Detailed score breakdowns, performance charts, question-by-question analysis, and AI-powered insights to improve your skills.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                <Button
+                                    onClick={() => router.push('/dashboard/student/assessment')}
+                                    className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all group"
+                                >
+                                    <CheckCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+                                    Continue Your Assessment
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => router.push('/dashboard/student/jobs')}
+                                    className="border-orange-300 hover:bg-orange-50 dark:border-orange-700 dark:hover:bg-orange-950/20"
+                                >
+                                    View Job Recommendations
+                                </Button>
+                            </div>
+
+                            {/* Progress Indicator (if available) */}
+                            <div className="pt-4 border-t border-orange-200 dark:border-orange-800">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                                    <span className="font-semibold">Tip:</span> Complete your assessment in one sitting for the best experience. You can pause and resume anytime from the assessment page.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Additional Help Section */}
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            Need Help?
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                            Having trouble completing your assessment? Make sure you've answered all questions in each round and submitted your responses.
+                        </p>
+                        <div className="flex gap-3">
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => router.push('/dashboard/student/assessment')}
+                                className="border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-950/20"
+                            >
+                                Go to Assessment
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </DashboardLayout>
+        )
+    }
+
+    // Show generic error UI  
+    if (error && error !== 'incomplete') {
+        return (
+            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+                <div className="space-y-6 pb-8 max-w-2xl mx-auto">
+                    <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => router.push('/dashboard/student/assessment')}
+                        className="group"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                        Back to Assessments
+                    </Button>
+
+                    <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+                            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                            Unable to Load Report
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">
+                            {error}
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                            <Button
+                                onClick={() => {
+                                    setError(null)
+                                    setLoading(true)
+                                    window.location.reload()
+                                }}
+                                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                            >
+                                Try Again
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => router.push('/dashboard/student/assessment')}
+                            >
+                                Back to Assessments
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </DashboardLayout>
+        )
+    }
+
     const stats = calculateStats()
     const performanceBadge = getPerformanceBadge(report?.overall_score || 0)
-    const PerformanceIcon = performanceBadge.icon
+    const PerformanceIcon = performanceBadge?.icon || Trophy
 
     return (
         <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
@@ -437,7 +640,7 @@ export default function AssessmentReportPage() {
                 {/* Enhanced Tabs with Better Navigation */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <div className="flex items-center justify-between mb-4">
-                        <TabsList className="grid grid-cols-5 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+                        <TabsList className="grid grid-cols-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
                             <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
                                 <BarChart3 className="h-4 w-4 mr-2" />
                                 Overview
@@ -453,6 +656,10 @@ export default function AssessmentReportPage() {
                             <TabsTrigger value="questions" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
                                 <ClipboardList className="h-4 w-4 mr-2" />
                                 Questions
+                            </TabsTrigger>
+                            <TabsTrigger value="playlist" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+                                <PlayCircle className="h-4 w-4 mr-2" />
+                                Playlist
                             </TabsTrigger>
                             <TabsTrigger value="insights" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
                                 <Brain className="h-4 w-4 mr-2" />
@@ -778,9 +985,10 @@ export default function AssessmentReportPage() {
                                         {Math.max(...(report?.rounds?.map((r: any) => r.percentage) || [0]))}%
                                     </div>
                                     <p className="text-sm text-gray-600 mt-1">
-                                        {roundInfo.find(r => r.number === report?.rounds?.reduce((max: any, r: any) => 
-                                            r.percentage > max.percentage ? r : max
-                                        )?.round_number)?.name}
+                                        {(() => {
+                                            const best = report?.rounds?.reduce((max: any, r: any) => r.percentage > max.percentage ? r : max, { percentage: -1 })
+                                            return best ? getRoundName(best) : undefined
+                                        })()}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -832,7 +1040,7 @@ export default function AssessmentReportPage() {
                         {/* Round Cards */}
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {report?.rounds?.map((round: any) => {
-                                const roundConfig = roundInfo.find(r => r.number === round.round_number)
+                                const roundConfig = roundTypeInfo[round.round_type]
                                 const RoundIcon = roundConfig?.icon
                                 return (
                                     <Card 
@@ -849,7 +1057,7 @@ export default function AssessmentReportPage() {
                                                     {RoundIcon && <RoundIcon className="h-5 w-5" />}
                                                 </div>
                                                 <div>
-                                                    <CardTitle className="text-base">{roundConfig?.name}</CardTitle>
+                                                    <CardTitle className="text-base">{getRoundName(round)}</CardTitle>
                                                     <CardDescription>Round {round.round_number}</CardDescription>
                                                 </div>
                                             </div>
@@ -1264,7 +1472,7 @@ export default function AssessmentReportPage() {
                         {/* Round-by-Round AI Insights - Keep your existing implementation */}
                         {report?.rounds && report.rounds.length > 0 ?
                             report.rounds.map((round: any) => {
-                                const roundConfig = roundInfo.find(r => r.number === round.round_number)
+                                const roundConfig = roundTypeInfo[round.round_type]
                                 const RoundIcon = roundConfig?.icon
                                 const hasAiFeedback = round.ai_feedback && 
                                     (typeof round.ai_feedback === 'object' ? 
@@ -1282,7 +1490,7 @@ export default function AssessmentReportPage() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <CardTitle className="text-xl">
-                                                        {roundConfig?.name || `Round ${round.round_number}`}
+                                                        {getRoundName(round)}
                                                     </CardTitle>
                                                     <CardDescription className="text-base">
                                                         AI-Generated Feedback & Analysis
@@ -1517,6 +1725,13 @@ export default function AssessmentReportPage() {
                             </Card>
                         )}
                     </TabsContent>
+
+                    {/* Playlist Tab */}
+                    <TabsContent value="playlist" className="space-y-6">
+                        <PlaylistTab assessmentId={assessmentId || ''} />
+                    </TabsContent>
+
+                    
                 </Tabs>
 
                 {/* Next Steps */}

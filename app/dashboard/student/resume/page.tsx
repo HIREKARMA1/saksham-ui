@@ -33,7 +33,6 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Assessments', href: '/dashboard/student/assessment', icon: ClipboardList },
 ]
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
