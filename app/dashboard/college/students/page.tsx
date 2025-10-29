@@ -355,10 +355,10 @@ export default function CollegeStudents() {
                                                             Edit
                                                         </Button>
                                                         {student.status?.toUpperCase() === 'ACTIVE' ? (
-                                                            <Button
+                                                        <Button
                                                                 variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteStudent(student.id)}
+                                                            size="sm"
+                                                            onClick={() => handleDeleteStudent(student.id)}
                                                                 className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                                                                 title="Mark student as inactive"
                                                             >
@@ -375,7 +375,7 @@ export default function CollegeStudents() {
                                                             >
                                                                 <Users className="w-4 h-4 mr-1" />
                                                                 Activate
-                                                            </Button>
+                                                        </Button>
                                                         )}
                                                     </div>
                                                 </td>
