@@ -130,13 +130,65 @@ class ApiClient {
     return response.data;
   }
 
+  async deactivateCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/colleges/${id}/deactivate`);
+    return response.data;
+  }
+
+  async activateCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/colleges/${id}/activate`);
+    return response.data;
+  }
+
   async deleteCollege(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admin/colleges/${id}`);
     return response.data;
   }
 
+  async getStudents(params?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/students', { params });
+    return response.data;
+  }
+
   async createStudent(data: any): Promise<any> {
     const response: AxiosResponse = await this.client.post('/admin/students', data);
+    return response.data;
+  }
+
+  async updateStudent(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/students/${id}`, data);
+    return response.data;
+  }
+
+  async deactivateStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/students/${id}/deactivate`);
+    return response.data;
+  }
+
+  async activateStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/students/${id}/activate`);
+    return response.data;
+  }
+
+  async deleteStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/students/${id}`);
+    return response.data;
+  }
+
+  async uploadStudentsCSV(file: File, collegeId?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (collegeId) {
+      formData.append('college_id', collegeId);
+      console.log('📤 Uploading CSV with college_id:', collegeId);
+    } else {
+      console.log('📤 Uploading CSV without college_id');
+    }
+    const response: AxiosResponse = await this.client.post('/admin/students/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
@@ -158,6 +210,37 @@ class ApiClient {
 
   async getCollegeStudents(params?: any): Promise<any> {
     const response: AxiosResponse = await this.client.get('/college/students', { params });
+    return response.data;
+  }
+
+  async createCollegeStudent(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/college/students', data);
+    return response.data;
+  }
+
+  async updateCollegeStudent(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/college/students/${id}`, data);
+    return response.data;
+  }
+
+  async deleteCollegeStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/college/students/${id}`);
+    return response.data;
+  }
+
+  async activateCollegeStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/college/students/${id}/activate`);
+    return response.data;
+  }
+
+  async uploadCollegeStudentsCSV(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response: AxiosResponse = await this.client.post('/college/students/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
