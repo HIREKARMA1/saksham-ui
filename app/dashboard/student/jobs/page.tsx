@@ -24,7 +24,8 @@ import {
     Award,
     Sparkles,
     Upload,
-    PlayCircle
+    PlayCircle,
+    Zap
 } from 'lucide-react'
 import { AxiosError } from 'axios'
 import Link from 'next/link'
@@ -35,6 +36,7 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
+    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
 ]
 
 interface JobRecommendation {

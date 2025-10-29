@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-import { Home, User, FileText, Briefcase, ClipboardList } from 'lucide-react'
+import { Home, User, FileText, Briefcase, ClipboardList, Zap } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 
 // Lazy-load Recharts on client only
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
@@ -24,13 +25,13 @@ const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
 const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
-import Link from 'next/link'
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
+    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
 ]
 
 export default function StudentDashboard() {
@@ -131,6 +132,7 @@ export default function StudentDashboard() {
                                         Browse Jobs
                                     </Button>
                                 </Link>
+                                
                                 <Link href="/dashboard/student/assessment">
                                     <Button variant="outline" className="w-full justify-start">
                                         <ClipboardList className="mr-2 h-4 w-4" />
