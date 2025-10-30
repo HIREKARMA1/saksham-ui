@@ -104,7 +104,7 @@ export const DropdownMenuProvider = ({ children }: { children: React.ReactNode }
 const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTriggerProps>(
     ({ className, children, asChild, ...props }, ref) => {
         const { isOpen, setIsOpen } = React.useContext(DropdownMenuContext)
-        const triggerRef = React.useRef<HTMLElement>(null)
+        const triggerRef = React.useRef<HTMLElement | null>(null)
 
         const handleClick = (e: React.MouseEvent) => {
             e.stopPropagation()
@@ -115,10 +115,10 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
             // When asChild is true, clone the child element and add the trigger functionality
             const child = React.Children.only(children) as React.ReactElement
             return React.cloneElement(child, {
-                ref: (node: HTMLElement) => {
+                ref: (node: HTMLElement | null) => {
                     triggerRef.current = node
                     if (typeof ref === 'function') ref(node as any)
-                    else if (ref) ref.current = node as any
+                    else if (ref && node) (ref as React.MutableRefObject<any>).current = node
                 },
                 'data-dropdown-trigger': true,
                 className: cn(child.props.className, className),
@@ -135,7 +135,7 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
                 ref={(node) => {
                     triggerRef.current = node
                     if (typeof ref === 'function') ref(node)
-                    else if (ref) ref.current = node
+                    else if (ref && node) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
                 }}
                 data-dropdown-trigger
                 className={cn(
@@ -155,8 +155,8 @@ DropdownMenuTrigger.displayName = "DropdownMenuTrigger"
 const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContentProps>(
     ({ className, children, sideOffset = 4, align = 'end', ...props }, ref) => {
         const { isOpen, setIsOpen } = React.useContext(DropdownMenuContext)
-        const contentRef = React.useRef<HTMLDivElement>(null)
-        const triggerRef = React.useRef<HTMLElement>(null)
+        const contentRef = React.useRef<HTMLDivElement | null>(null)
+        const triggerRef = React.useRef<HTMLElement | null>(null)
         const [position, setPosition] = React.useState({ top: 0, left: 0, width: 0 })
         const [mounted, setMounted] = React.useState(false)
 
@@ -169,24 +169,21 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
             if (isOpen) {
                 const updatePosition = () => {
                     // Find the trigger button in the DOM by finding the element with data-dropdown-trigger
-                    const triggers = document.querySelectorAll('[data-dropdown-trigger]')
+                    const triggers = document.querySelectorAll<HTMLElement>('[data-dropdown-trigger]')
                     // Find the one that belongs to this dropdown (the one inside our parent container)
                     const parentContainer = contentRef.current?.parentElement
-                    let trigger: HTMLElement | null = null
                     
-                    triggers.forEach((t) => {
+                    for (let i = 0; i < triggers.length; i++) {
+                        const t = triggers[i]
                         if (parentContainer && parentContainer.contains(t)) {
-                            trigger = t as HTMLElement
+                            const rect = t.getBoundingClientRect()
+                            setPosition({
+                                top: rect.bottom + sideOffset,
+                                left: rect.right, // Use right edge of trigger for right-aligned dropdown
+                                width: rect.width
+                            })
+                            break
                         }
-                    })
-                    
-                    if (trigger) {
-                        const rect = trigger.getBoundingClientRect()
-                        setPosition({
-                            top: rect.bottom + sideOffset,
-                            left: rect.right, // Use right edge of trigger for right-aligned dropdown
-                            width: rect.width
-                        })
                     }
                 }
                 updatePosition()
@@ -247,7 +244,7 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
                 ref={(node) => {
                     contentRef.current = node
                     if (typeof ref === 'function') ref(node)
-                    else if (ref) ref.current = node
+                    else if (ref && node) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
                 }}
                 style={{ 
                     position: 'fixed',
@@ -273,8 +270,25 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
 DropdownMenuContent.displayName = "DropdownMenuContent"
 
 const DropdownMenuItem = React.forwardRef<HTMLButtonElement, DropdownMenuItemProps>(
-    ({ className, inset, children, ...props }, ref) => {
+    ({ className, inset, asChild, children, ...props }, ref) => {
         const { setIsOpen } = React.useContext(DropdownMenuContext)
+
+        if (asChild && React.isValidElement(children)) {
+            return React.cloneElement(children, {
+                ...children.props,
+                className: cn(
+                    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left",
+                    inset && "pl-8",
+                    className,
+                    children.props.className
+                ),
+                onClick: (e: React.MouseEvent) => {
+                    setIsOpen(false)
+                    children.props.onClick?.(e)
+                    props.onClick?.(e as any)
+                }
+            } as any)
+        }
 
         return (
             <button
