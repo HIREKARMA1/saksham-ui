@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from './Navbar'
@@ -23,6 +23,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, sidebarItems, requiredUserType }: DashboardLayoutProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
+    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     useEffect(() => {
         if (!loading && !user) {
@@ -46,11 +47,19 @@ export function DashboardLayout({ children, sidebarItems, requiredUserType }: Da
         return null
     }
 
+    const toggleSidebar = () => {
+        setSidebarOpen(!sidebarOpen)
+    }
+
+    const closeSidebar = () => {
+        setSidebarOpen(false)
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Navbar user={user} />
+            <Navbar user={user} onToggleSidebar={toggleSidebar} />
             <div className="flex">
-                <Sidebar items={sidebarItems} />
+                <Sidebar items={sidebarItems} isOpen={sidebarOpen} onClose={closeSidebar} />
                 <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-73px)]">
                     {children}
                 </main>

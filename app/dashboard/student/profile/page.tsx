@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-import { Home, User, FileText, Briefcase, ClipboardList } from 'lucide-react'
+import { Home, User, FileText, Briefcase, ClipboardList, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const sidebarItems = [
@@ -15,7 +15,7 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Assessments', href: '/dashboard/student/assessments', icon: ClipboardList },
+    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
 ]
 
 export default function StudentProfile() {

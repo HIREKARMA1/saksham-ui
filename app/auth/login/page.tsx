@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -40,12 +40,12 @@ export default function LoginPage() {
     const router = useRouter()
 
     // Auto-advance slider
-    useState(() => {
+    useEffect(() => {
         const interval = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % sliderImages.length)
         }, 5000)
         return () => clearInterval(interval)
-    })
+    }, [])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

@@ -1,5 +1,10 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosProgressEvent } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosProgressEvent, InternalAxiosRequestConfig } from 'axios';
 import { config } from './config';
+
+// Extend Axios config to include custom properties
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 class ApiClient {
   public client: AxiosInstance;
@@ -7,6 +12,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: config.api.fullUrl,
+      timeout: 180000, // 3 minutes timeout for long-running operations like job applications
       headers: {
         'Content-Type': 'application/json',
       },
@@ -14,7 +20,7 @@ class ApiClient {
 
     // Add request interceptor to include auth token
     this.client.interceptors.request.use(
-      (config) => {
+      async (config: CustomAxiosRequestConfig) => {
         // Add API version prefix
         if (!config.url?.startsWith('/api/v1/')) {
           config.url = `/api/v1${config.url}`;
@@ -25,6 +31,29 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Skip proactive refresh for refresh token endpoint itself to prevent infinite loop
+        if (config.url?.includes('/auth/refresh')) {
+          return config;
+        }
+        
+        // Check if token is about to expire and refresh proactively
+        const tokenExpiry = localStorage.getItem('token_expiry');
+        if (tokenExpiry && Date.now() > parseInt(tokenExpiry) - 60000) { // Refresh 1 minute before expiry
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (refreshToken) {
+            try {
+              const response = await this.refreshToken(refreshToken);
+              localStorage.setItem('access_token', response.access_token);
+              localStorage.setItem('refresh_token', response.refresh_token);
+              localStorage.setItem('token_expiry', String(Date.now() + 30 * 60 * 1000)); // 30 minutes
+              config.headers.Authorization = `Bearer ${response.access_token}`;
+            } catch (error) {
+              console.warn('Token refresh failed, continuing with existing token');
+            }
+          }
+        }
+        
         return config;
       },
       (error) => {
@@ -36,7 +65,7 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
-        const originalRequest = error.config;
+        const originalRequest: CustomAxiosRequestConfig = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
@@ -130,13 +159,65 @@ class ApiClient {
     return response.data;
   }
 
+  async deactivateCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/colleges/${id}/deactivate`);
+    return response.data;
+  }
+
+  async activateCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/colleges/${id}/activate`);
+    return response.data;
+  }
+
   async deleteCollege(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admin/colleges/${id}`);
     return response.data;
   }
 
+  async getStudents(params?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/students', { params });
+    return response.data;
+  }
+
   async createStudent(data: any): Promise<any> {
     const response: AxiosResponse = await this.client.post('/admin/students', data);
+    return response.data;
+  }
+
+  async updateStudent(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/students/${id}`, data);
+    return response.data;
+  }
+
+  async deactivateStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/students/${id}/deactivate`);
+    return response.data;
+  }
+
+  async activateStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admin/students/${id}/activate`);
+    return response.data;
+  }
+
+  async deleteStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/students/${id}`);
+    return response.data;
+  }
+
+  async uploadStudentsCSV(file: File, collegeId?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (collegeId) {
+      formData.append('college_id', collegeId);
+      console.log('📤 Uploading CSV with college_id:', collegeId);
+    } else {
+      console.log('📤 Uploading CSV without college_id');
+    }
+    const response: AxiosResponse = await this.client.post('/admin/students/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
@@ -158,6 +239,37 @@ class ApiClient {
 
   async getCollegeStudents(params?: any): Promise<any> {
     const response: AxiosResponse = await this.client.get('/college/students', { params });
+    return response.data;
+  }
+
+  async createCollegeStudent(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/college/students', data);
+    return response.data;
+  }
+
+  async updateCollegeStudent(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/college/students/${id}`, data);
+    return response.data;
+  }
+
+  async deleteCollegeStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/college/students/${id}`);
+    return response.data;
+  }
+
+  async activateCollegeStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/college/students/${id}/activate`);
+    return response.data;
+  }
+
+  async uploadCollegeStudentsCSV(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response: AxiosResponse = await this.client.post('/college/students/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
@@ -285,6 +397,16 @@ class ApiClient {
     return response.data;
   }
 
+  async executeCode(assessmentId: string, roundId: string, payload: {question_id: string; language: string; code: string; stdin?: string}): Promise<any> {
+    // Judge0 executions can take longer; override the default 30s client timeout for this call
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/rounds/${roundId}/code/execute`,
+      payload,
+      { timeout: 60000 } // 60s
+    );
+    return response.data;
+  }
+
   async submitVoiceResponse(assessmentId: string, roundId: string, formData: FormData): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/rounds/${roundId}/voice-response`, formData, {
       headers: {
@@ -318,6 +440,11 @@ class ApiClient {
 
   async getAssessmentQA(assessmentId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/qa`);
+    return response.data;
+  }
+
+  async getAssessmentPlaylist(assessmentId: string, max_results: number = 6): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/${assessmentId}/playlist`, { params: { max_results } });
     return response.data;
   }
 
