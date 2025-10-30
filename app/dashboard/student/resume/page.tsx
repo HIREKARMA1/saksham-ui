@@ -24,7 +24,8 @@ import {
     TrendingUp,
     Download,
     RefreshCw,
-    Zap
+    Zap,
+    BarChart3
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { AxiosError } from 'axios'
@@ -35,6 +36,7 @@ const sidebarItems = [
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
     { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
+    { name: 'Analytics', href: '/dashboard/student/analytics', icon: BarChart3 },
 ]
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB

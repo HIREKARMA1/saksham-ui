@@ -21,6 +21,7 @@ const sidebarItems = [
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
+    { name: 'Analytics', href: '/dashboard/student/analytics', icon: BarChart3 },
 ]
 
 // Round display information

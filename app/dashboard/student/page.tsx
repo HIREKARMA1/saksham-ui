@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-import { Home, User, FileText, Briefcase, ClipboardList, Zap } from 'lucide-react'
+import { Home, User, FileText, Briefcase, ClipboardList, Zap, BarChart3 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
@@ -32,6 +32,7 @@ const sidebarItems = [
     { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
     { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
+    { name: 'Analytics', href: '/dashboard/student/analytics' , icon: BarChart3 },
 ]
 
 export default function StudentDashboard() {
