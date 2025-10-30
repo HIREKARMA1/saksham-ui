@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-<<<<<<< HEAD
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, BarChart3 } from 'lucide-react'
-=======
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users } from 'lucide-react'
->>>>>>> c504226ea75ba94c8564ab5515ec529192a1e9c5
+import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users, BarChart3 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
