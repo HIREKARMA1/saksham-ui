@@ -207,7 +207,7 @@ export default function StudentDashboard() {
                                             <FileText className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                                         </div>
                                         <span className="font-medium text-blue-900 dark:text-blue-100">
-                                            {stats?.resume_uploaded ? 'Update Resume' : 'Upload Resume'}
+                                        {stats?.resume_uploaded ? 'Update Resume' : 'Upload Resume'}
                                         </span>
                                     </div>
                                 </Link>
@@ -258,29 +258,29 @@ export default function StudentDashboard() {
                                     View your latest assessment report with per-question breakdown and AI insights
                                 </p>
                             </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Button
-                                    disabled={!latestReport.id}
-                                    onClick={() => {
-                                        if (latestReport.id) {
-                                            window.location.href = `/dashboard/student/assessment/report?id=${latestReport.id}`
-                                        }
-                                    }}
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <Button
+                                        disabled={!latestReport.id}
+                                        onClick={() => {
+                                            if (latestReport.id) {
+                                                window.location.href = `/dashboard/student/assessment/report?id=${latestReport.id}`
+                                            }
+                                        }}
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                                >
-                                    {latestReport.id ? 'View Latest Report' : 'No completed assessments yet'}
-                                </Button>
-                                {latestReport.date && (
+                                    >
+                                        {latestReport.id ? 'View Latest Report' : 'No completed assessments yet'}
+                                    </Button>
+                                    {latestReport.date && (
                                     <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                                        Last completed: {new Date(latestReport.date).toLocaleString()}
-                                    </span>
-                                )}
-                                <Link href="/dashboard/student/assessment/history" className="ml-auto">
+                                            Last completed: {new Date(latestReport.date).toLocaleString()}
+                                        </span>
+                                    )}
+                                    <Link href="/dashboard/student/assessment/history" className="ml-auto">
                                     <Button variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900">
                                         Browse All Reports
                                     </Button>
-                                </Link>
-                            </div>
+                                    </Link>
+                                </div>
                         </div>
 
                         {/* Resume Status */}
