@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/lib/i18n/useTranslation';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 
 export function Partners() {
   const { t } = useTranslation();
@@ -24,8 +25,9 @@ export function Partners() {
   ];
 
   return (
-    <section id="partners" className="section-container bg-gray-50 dark:bg-gray-900/50">
-      <div className="text-center mb-16">
+    <section id="partners" className="section-container bg-gray-50 dark:bg-gray-900/50 relative overflow-hidden">
+      <AnimatedBackground variant="subtle" />
+      <div className="text-center mb-16 relative z-10">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -48,7 +50,7 @@ export function Partners() {
       </div>
 
       {/* Partners Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8 relative z-10">
         {partners.map((partner, index) => (
           <motion.div
             key={partner.id}

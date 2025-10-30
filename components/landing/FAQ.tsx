@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 import { cn } from '@/lib/utils';
 
 interface FAQItem {
@@ -95,8 +96,9 @@ export function FAQ() {
     : faqs.filter(faq => faq.category === activeCategory);
 
   return (
-    <section id="faq" className="section-container">
-      <div className="text-center mb-16">
+    <section id="faq" className="section-container relative overflow-hidden bg-gray-50 dark:bg-gray-900/50">
+      <AnimatedBackground variant="alternate" />
+      <div className="text-center mb-16 relative z-10">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -143,7 +145,7 @@ export function FAQ() {
       </motion.div>
 
       {/* FAQ Accordion */}
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4 relative z-10">
         {filteredFaqs.map((faq, index) => (
           <FAQAccordion
             key={faq.id}

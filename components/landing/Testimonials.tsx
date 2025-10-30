@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Star, Quote } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Card } from '@/components/ui/card';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 
 interface Testimonial {
   id: string;
@@ -71,8 +72,9 @@ export function Testimonials() {
   ];
 
   return (
-    <section id="testimonials" className="section-container">
-      <div className="text-center mb-16">
+    <section id="testimonials" className="section-container relative overflow-hidden">
+      <AnimatedBackground variant="alternate" />
+      <div className="text-center mb-16 relative z-10">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -94,7 +96,7 @@ export function Testimonials() {
         </motion.p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 relative z-10">
         {testimonials.map((testimonial, index) => (
           <TestimonialCard
             key={testimonial.id}

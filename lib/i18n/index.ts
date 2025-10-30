@@ -74,6 +74,71 @@ export interface TranslationKeys {
   'faq.title': string;
   'faq.subtitle': string;
   
+  // Problem Solution
+  'problemSolution.badge': string;
+  'problemSolution.title': string;
+  'problemSolution.subtitle': string;
+  'problemSolution.tabProblems': string;
+  'problemSolution.tabSolutions': string;
+  'problemSolution.cta.primary': string;
+  'problemSolution.cta.secondary': string;
+  
+  'problem.unprepared.title': string;
+  'problem.unprepared.description': string;
+  'problem.unprepared.point1': string;
+  'problem.unprepared.point2': string;
+  'problem.unprepared.point3': string;
+  'problem.unprepared.point4': string;
+  
+  'problem.time.title': string;
+  'problem.time.description': string;
+  'problem.time.point1': string;
+  'problem.time.point2': string;
+  'problem.time.point3': string;
+  'problem.time.point4': string;
+  
+  'problem.feedback.title': string;
+  'problem.feedback.description': string;
+  'problem.feedback.point1': string;
+  'problem.feedback.point2': string;
+  'problem.feedback.point3': string;
+  'problem.feedback.point4': string;
+  
+  'problem.outdated.title': string;
+  'problem.outdated.description': string;
+  'problem.outdated.point1': string;
+  'problem.outdated.point2': string;
+  'problem.outdated.point3': string;
+  'problem.outdated.point4': string;
+  
+  'solution.aiPractice.title': string;
+  'solution.aiPractice.description': string;
+  'solution.aiPractice.benefit1': string;
+  'solution.aiPractice.benefit2': string;
+  'solution.aiPractice.benefit3': string;
+  'solution.aiPractice.benefit4': string;
+  
+  'solution.instantFeedback.title': string;
+  'solution.instantFeedback.description': string;
+  'solution.instantFeedback.benefit1': string;
+  'solution.instantFeedback.benefit2': string;
+  'solution.instantFeedback.benefit3': string;
+  'solution.instantFeedback.benefit4': string;
+  
+  'solution.comprehensive.title': string;
+  'solution.comprehensive.description': string;
+  'solution.comprehensive.benefit1': string;
+  'solution.comprehensive.benefit2': string;
+  'solution.comprehensive.benefit3': string;
+  'solution.comprehensive.benefit4': string;
+  
+  'solution.smartPrep.title': string;
+  'solution.smartPrep.description': string;
+  'solution.smartPrep.benefit1': string;
+  'solution.smartPrep.benefit2': string;
+  'solution.smartPrep.benefit3': string;
+  'solution.smartPrep.benefit4': string;
+  
   // Footer
   'footer.tagline': string;
   'footer.copyright': string;
@@ -170,6 +235,71 @@ const translations: Translations = {
     'faq.title': 'Frequently Asked Questions',
     'faq.subtitle': 'Everything you need to know about Saksham AI',
     
+    // Problem Solution
+    'problemSolution.badge': 'Transform Your Interview Preparation',
+    'problemSolution.title': 'From Interview Anxiety to',
+    'problemSolution.subtitle': 'We understand the challenges you face. Here\'s how Saksham AI solves them.',
+    'problemSolution.tabProblems': 'Common Problems',
+    'problemSolution.tabSolutions': 'Our Solutions',
+    'problemSolution.cta.primary': 'Start Your Free Trial',
+    'problemSolution.cta.secondary': 'See How It Works',
+    
+    'problem.unprepared.title': 'Feeling Unprepared',
+    'problem.unprepared.description': 'Walking into interviews without proper practice and confidence',
+    'problem.unprepared.point1': 'Don\'t know what questions to expect',
+    'problem.unprepared.point2': 'Lack of real interview experience',
+    'problem.unprepared.point3': 'Nervous about behavioral questions',
+    'problem.unprepared.point4': 'Unsure how to present yourself',
+    
+    'problem.time.title': 'Limited Time to Practice',
+    'problem.time.description': 'Struggling to find time for comprehensive interview preparation',
+    'problem.time.point1': 'Busy schedule with limited prep time',
+    'problem.time.point2': 'No access to mock interviewers',
+    'problem.time.point3': 'Can\'t afford expensive coaching',
+    'problem.time.point4': 'Need flexible practice options',
+    
+    'problem.feedback.title': 'No Quality Feedback',
+    'problem.feedback.description': 'Practicing without knowing what you\'re doing wrong',
+    'problem.feedback.point1': 'No one to review your answers',
+    'problem.feedback.point2': 'Don\'t know your weak areas',
+    'problem.feedback.point3': 'Repeating the same mistakes',
+    'problem.feedback.point4': 'Can\'t track improvement',
+    
+    'problem.outdated.title': 'Outdated Resources',
+    'problem.outdated.description': 'Using generic prep materials that don\'t match real interviews',
+    'problem.outdated.point1': 'Questions don\'t match actual interviews',
+    'problem.outdated.point2': 'No company-specific preparation',
+    'problem.outdated.point3': 'Generic advice that doesn\'t help',
+    'problem.outdated.point4': 'Resources not updated regularly',
+    
+    'solution.aiPractice.title': 'AI-Powered Mock Interviews',
+    'solution.aiPractice.description': 'Practice with realistic AI interviews anytime, anywhere',
+    'solution.aiPractice.benefit1': 'Unlimited practice sessions 24/7',
+    'solution.aiPractice.benefit2': 'Realistic interview simulations',
+    'solution.aiPractice.benefit3': 'Company-specific question patterns',
+    'solution.aiPractice.benefit4': 'Voice and video interview support',
+    
+    'solution.instantFeedback.title': 'Instant AI Feedback',
+    'solution.instantFeedback.description': 'Get detailed analysis and improvement suggestions immediately',
+    'solution.instantFeedback.benefit1': 'Real-time performance analysis',
+    'solution.instantFeedback.benefit2': 'Personalized improvement tips',
+    'solution.instantFeedback.benefit3': 'Track progress over time',
+    'solution.instantFeedback.benefit4': 'Identify and fix weak areas',
+    
+    'solution.comprehensive.title': 'Comprehensive Question Bank',
+    'solution.comprehensive.description': '10,000+ real interview questions from top companies',
+    'solution.comprehensive.benefit1': 'Technical & behavioral questions',
+    'solution.comprehensive.benefit2': 'Company-specific questions',
+    'solution.comprehensive.benefit3': 'Regularly updated database',
+    'solution.comprehensive.benefit4': 'Industry-specific content',
+    
+    'solution.smartPrep.title': 'Smart Preparation Plan',
+    'solution.smartPrep.description': 'AI creates personalized study plans based on your needs',
+    'solution.smartPrep.benefit1': 'Customized learning paths',
+    'solution.smartPrep.benefit2': 'Focus on your weak areas',
+    'solution.smartPrep.benefit3': 'Time-efficient preparation',
+    'solution.smartPrep.benefit4': 'Adaptive difficulty levels',
+    
     // Footer
     'footer.tagline': 'Empowering job seekers with AI-driven interview preparation',
     'footer.copyright': '© 2025 Saksham AI. All rights reserved.',
@@ -262,6 +392,71 @@ const translations: Translations = {
     'faq.title': 'अक्सर पूछे जाने वाले प्रश्न',
     'faq.subtitle': 'सक्षम AI के बारे में जानने के लिए आवश्यक सब कुछ',
     
+    // Problem Solution
+    'problemSolution.badge': 'अपनी इंटरव्यू तैयारी में क्रांति लाएं',
+    'problemSolution.title': 'इंटरव्यू की चिंता से',
+    'problemSolution.subtitle': 'हम आपकी चुनौतियों को समझते हैं। यहाँ बताया गया है कि सक्षम AI उन्हें कैसे हल करता है।',
+    'problemSolution.tabProblems': 'आम समस्याएं',
+    'problemSolution.tabSolutions': 'हमारे समाधान',
+    'problemSolution.cta.primary': 'अपना मुफ्त ट्रायल शुरू करें',
+    'problemSolution.cta.secondary': 'यह कैसे काम करता है देखें',
+    
+    'problem.unprepared.title': 'अपर्याप्त तैयारी महसूस करना',
+    'problem.unprepared.description': 'उचित अभ्यास और आत्मविश्वास के बिना इंटरव्यू में जाना',
+    'problem.unprepared.point1': 'पता नहीं कि किन सवालों की उम्मीद करें',
+    'problem.unprepared.point2': 'वास्तविक इंटरव्यू अनुभव की कमी',
+    'problem.unprepared.point3': 'व्यवहारिक प्रश्नों के बारे में घबराहट',
+    'problem.unprepared.point4': 'खुद को कैसे पेश करें यह अनिश्चित',
+    
+    'problem.time.title': 'अभ्यास के लिए सीमित समय',
+    'problem.time.description': 'व्यापक इंटरव्यू तैयारी के लिए समय खोजने में संघर्ष',
+    'problem.time.point1': 'सीमित तैयारी समय के साथ व्यस्त कार्यक्रम',
+    'problem.time.point2': 'मॉक इंटरव्यूअर तक पहुंच नहीं',
+    'problem.time.point3': 'महंगी कोचिंग का खर्च नहीं उठा सकते',
+    'problem.time.point4': 'लचीले अभ्यास विकल्प की आवश्यकता',
+    
+    'problem.feedback.title': 'गुणवत्तापूर्ण फीडबैक नहीं',
+    'problem.feedback.description': 'यह जाने बिना अभ्यास करना कि आप क्या गलत कर रहे हैं',
+    'problem.feedback.point1': 'आपके उत्तरों की समीक्षा करने वाला कोई नहीं',
+    'problem.feedback.point2': 'अपने कमजोर क्षेत्रों को नहीं जानते',
+    'problem.feedback.point3': 'वही गलतियाँ दोहराना',
+    'problem.feedback.point4': 'सुधार को ट्रैक नहीं कर सकते',
+    
+    'problem.outdated.title': 'पुराने संसाधन',
+    'problem.outdated.description': 'सामान्य तैयारी सामग्री का उपयोग जो वास्तविक इंटरव्यू से मेल नहीं खाती',
+    'problem.outdated.point1': 'प्रश्न वास्तविक इंटरव्यू से मेल नहीं खाते',
+    'problem.outdated.point2': 'कोई कंपनी-विशिष्ट तैयारी नहीं',
+    'problem.outdated.point3': 'सामान्य सलाह जो मदद नहीं करती',
+    'problem.outdated.point4': 'संसाधन नियमित रूप से अपडेट नहीं होते',
+    
+    'solution.aiPractice.title': 'AI-संचालित मॉक इंटरव्यू',
+    'solution.aiPractice.description': 'कभी भी, कहीं भी यथार्थवादी AI इंटरव्यू के साथ अभ्यास करें',
+    'solution.aiPractice.benefit1': '24/7 असीमित अभ्यास सत्र',
+    'solution.aiPractice.benefit2': 'यथार्थवादी इंटरव्यू सिमुलेशन',
+    'solution.aiPractice.benefit3': 'कंपनी-विशिष्ट प्रश्न पैटर्न',
+    'solution.aiPractice.benefit4': 'वॉयस और वीडियो इंटरव्यू समर्थन',
+    
+    'solution.instantFeedback.title': 'तत्काल AI फीडबैक',
+    'solution.instantFeedback.description': 'तुरंत विस्तृत विश्लेषण और सुधार सुझाव प्राप्त करें',
+    'solution.instantFeedback.benefit1': 'रियल-टाइम प्रदर्शन विश्लेषण',
+    'solution.instantFeedback.benefit2': 'व्यक्तिगत सुधार टिप्स',
+    'solution.instantFeedback.benefit3': 'समय के साथ प्रगति ट्रैक करें',
+    'solution.instantFeedback.benefit4': 'कमजोर क्षेत्रों की पहचान और सुधार करें',
+    
+    'solution.comprehensive.title': 'व्यापक प्रश्न बैंक',
+    'solution.comprehensive.description': 'शीर्ष कंपनियों से 10,000+ वास्तविक इंटरव्यू प्रश्न',
+    'solution.comprehensive.benefit1': 'तकनीकी और व्यवहारिक प्रश्न',
+    'solution.comprehensive.benefit2': 'कंपनी-विशिष्ट प्रश्न',
+    'solution.comprehensive.benefit3': 'नियमित रूप से अपडेट किया गया डेटाबेस',
+    'solution.comprehensive.benefit4': 'उद्योग-विशिष्ट सामग्री',
+    
+    'solution.smartPrep.title': 'स्मार्ट तैयारी योजना',
+    'solution.smartPrep.description': 'AI आपकी आवश्यकताओं के आधार पर व्यक्तिगत अध्ययन योजना बनाता है',
+    'solution.smartPrep.benefit1': 'अनुकूलित सीखने के मार्ग',
+    'solution.smartPrep.benefit2': 'अपने कमजोर क्षेत्रों पर ध्यान दें',
+    'solution.smartPrep.benefit3': 'समय-कुशल तैयारी',
+    'solution.smartPrep.benefit4': 'अनुकूली कठिनाई स्तर',
+    
     // Footer
     'footer.tagline': 'AI-संचालित इंटरव्यू तैयारी के साथ जॉब सीकर्स को सशक्त बनाना',
     'footer.copyright': '© 2025 सक्षम AI। सर्वाधिकार सुरक्षित।',
@@ -353,6 +548,71 @@ const translations: Translations = {
     // FAQ
     'faq.title': 'ବାରମ୍ବାର ପଚରାଯାଉଥିବା ପ୍ରଶ୍ନ',
     'faq.subtitle': 'ସକ୍ଷମ AI ବିଷୟରେ ଜାଣିବା ପାଇଁ ଆପଣଙ୍କୁ ଆବଶ୍ୟକ ସବୁକିଛି',
+    
+    // Problem Solution
+    'problemSolution.badge': 'Transform Your Interview Preparation',
+    'problemSolution.title': 'From Interview Anxiety to',
+    'problemSolution.subtitle': 'We understand the challenges you face. Here is how Saksham AI solves them.',
+    'problemSolution.tabProblems': 'Common Problems',
+    'problemSolution.tabSolutions': 'Our Solutions',
+    'problemSolution.cta.primary': 'Start Your Free Trial',
+    'problemSolution.cta.secondary': 'See How It Works',
+    
+    'problem.unprepared.title': 'Feeling Unprepared',
+    'problem.unprepared.description': 'Walking into interviews without proper practice and confidence',
+    'problem.unprepared.point1': 'Do not know what questions to expect',
+    'problem.unprepared.point2': 'Lack of real interview experience',
+    'problem.unprepared.point3': 'Nervous about behavioral questions',
+    'problem.unprepared.point4': 'Unsure how to present yourself',
+    
+    'problem.time.title': 'Limited Time to Practice',
+    'problem.time.description': 'Struggling to find time for comprehensive interview preparation',
+    'problem.time.point1': 'Busy schedule with limited prep time',
+    'problem.time.point2': 'No access to mock interviewers',
+    'problem.time.point3': 'Cannot afford expensive coaching',
+    'problem.time.point4': 'Need flexible practice options',
+    
+    'problem.feedback.title': 'No Quality Feedback',
+    'problem.feedback.description': 'Practicing without knowing what you are doing wrong',
+    'problem.feedback.point1': 'No one to review your answers',
+    'problem.feedback.point2': 'Do not know your weak areas',
+    'problem.feedback.point3': 'Repeating the same mistakes',
+    'problem.feedback.point4': 'Cannot track improvement',
+    
+    'problem.outdated.title': 'Outdated Resources',
+    'problem.outdated.description': 'Using generic prep materials that do not match real interviews',
+    'problem.outdated.point1': 'Questions do not match actual interviews',
+    'problem.outdated.point2': 'No company-specific preparation',
+    'problem.outdated.point3': 'Generic advice that does not help',
+    'problem.outdated.point4': 'Resources not updated regularly',
+    
+    'solution.aiPractice.title': 'AI-Powered Mock Interviews',
+    'solution.aiPractice.description': 'Practice with realistic AI interviews anytime, anywhere',
+    'solution.aiPractice.benefit1': '24/7 unlimited practice sessions',
+    'solution.aiPractice.benefit2': 'Realistic interview simulations',
+    'solution.aiPractice.benefit3': 'Company-specific question patterns',
+    'solution.aiPractice.benefit4': 'Voice and video interview support',
+    
+    'solution.instantFeedback.title': 'Instant AI Feedback',
+    'solution.instantFeedback.description': 'Get detailed analysis and improvement suggestions immediately',
+    'solution.instantFeedback.benefit1': 'Real-time performance analysis',
+    'solution.instantFeedback.benefit2': 'Personalized improvement tips',
+    'solution.instantFeedback.benefit3': 'Track progress over time',
+    'solution.instantFeedback.benefit4': 'Identify and fix weak areas',
+    
+    'solution.comprehensive.title': 'Comprehensive Question Bank',
+    'solution.comprehensive.description': '10,000+ real interview questions from top companies',
+    'solution.comprehensive.benefit1': 'Technical and behavioral questions',
+    'solution.comprehensive.benefit2': 'Company-specific questions',
+    'solution.comprehensive.benefit3': 'Regularly updated database',
+    'solution.comprehensive.benefit4': 'Industry-specific content',
+    
+    'solution.smartPrep.title': 'Smart Preparation Plan',
+    'solution.smartPrep.description': 'AI creates personalized study plans based on your needs',
+    'solution.smartPrep.benefit1': 'Customized learning paths',
+    'solution.smartPrep.benefit2': 'Focus on your weak areas',
+    'solution.smartPrep.benefit3': 'Time-efficient preparation',
+    'solution.smartPrep.benefit4': 'Adaptive difficulty levels',
     
     // Footer
     'footer.tagline': 'AI-ଚାଳିତ ସାକ୍ଷାତକାର ପ୍ରସ୍ତୁତି ସହିତ ଚାକିରି ଖୋଜୁଥିବା ଲୋକଙ୍କୁ ସଶକ୍ତ କରିବା',

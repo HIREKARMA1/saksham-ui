@@ -6,6 +6,7 @@ export { HeroSection } from './HeroSection';
 export { FeatureCards } from './FeatureCards';
 export { WhyChooseUs } from './WhyChooseUs';
 export { HowItWorks } from './HowItWorks';
+export { ProblemSolution } from './ProblemSolution';
 export { Testimonials } from './Testimonials';
 export { Partners } from './Partners';
 export { FAQ } from './FAQ';

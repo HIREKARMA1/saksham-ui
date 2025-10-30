@@ -22,7 +22,7 @@ export function LandingLayout({ children }: LandingLayoutProps) {
       />
       
       {/* Main Content Area with Sidebar */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 flex-col">
         {/* Sidebar - Hidden on mobile */}
         <div className="hidden lg:block">
           <LandingSidebar isCollapsed={isSidebarCollapsed} />
@@ -37,10 +37,17 @@ export function LandingLayout({ children }: LandingLayoutProps) {
         >
           {children}
         </main>
+        
+        {/* Footer */}
+        <div 
+          className={cn(
+            "transition-all duration-300",
+            isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
+          )}
+        >
+          <Footer />
+        </div>
       </div>
-      
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   LayoutDashboard,
   Lightbulb,
   Users,
@@ -10,9 +10,11 @@ import {
   Target,
   Rocket,
   MessageSquare,
-  HelpCircle
+  HelpCircle,
+  Zap
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -57,21 +59,27 @@ export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) 
       label: 'How It Works',
       onClick: () => scrollToSection('how-it-works'),
     },
+    {
+      id: 'problem-solution',
+      icon: <Zap className="w-5 h-5" />,
+      label: 'Problems & Solutions',
+      onClick: () => scrollToSection('problem-solution'),
+    },
   ];
 
   const additionalFeatures: SidebarItem[] = [
-    {
-      id: 'testimonials',
-      icon: <MessageSquare className="w-5 h-5" />,
-      label: 'Testimonials',
-      onClick: () => scrollToSection('testimonials'),
-    },
-    {
-      id: 'partners',
-      icon: <Users className="w-5 h-5" />,
-      label: 'Partners',
-      onClick: () => scrollToSection('partners'),
-    },
+    // {
+    //   id: 'testimonials',
+    //   icon: <MessageSquare className="w-5 h-5" />,
+    //   label: 'Testimonials',
+    //   onClick: () => scrollToSection('testimonials'),
+    // },
+    // {
+    //   id: 'partners',
+    //   icon: <Users className="w-5 h-5" />,
+    //   label: 'Partners',
+    //   onClick: () => scrollToSection('partners'),
+    // },
     {
       id: 'faq',
       icon: <HelpCircle className="w-5 h-5" />,
@@ -90,17 +98,25 @@ export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) 
   return (
     <motion.aside
       initial={{ x: -280 }}
-      animate={{ 
+      animate={{
         x: 0,
-        width: isCollapsed ? 80 : 280 
+        width: isCollapsed ? 80 : 280
       }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       className={cn(
-        'fixed left-0 top-[64px] h-[calc(100vh-64px)] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-30 overflow-hidden',
+        'fixed left-0 top-[64px] h-[calc(100vh-64px)] z-30 overflow-hidden',
+        'bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg',
+        'border-r border-gray-200/50 dark:border-gray-800/50',
+        'shadow-lg',
         className
       )}
     >
-      <div className="flex flex-col h-full">
+      {/* Animated Background */}
+      <div className="absolute inset-0 -z-10">
+        <AnimatedBackground variant="subtle" showGrid={true} showLines={false} />
+      </div>
+
+      <div className="flex flex-col h-full relative z-10">
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8">
           {/* Main Features Section */}

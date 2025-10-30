@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Brain, Zap, BookOpen, Award, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Card } from '@/components/ui/card';
+import { AnimatedBackground } from '@/components/ui/animated-background';
+import { Counter } from '@/components/ui/counter';
 import { cn } from '@/lib/utils';
 
 interface Reason {
@@ -66,8 +68,9 @@ export function WhyChooseUs() {
   ];
 
   return (
-    <section id="why-choose" className="section-container">
-      <div className="text-center mb-16">
+    <section id="why-choose" className="section-container relative overflow-hidden bg-white dark:bg-gray-950">
+      <AnimatedBackground variant="subtle" />
+      <div className="text-center mb-16 relative z-10">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -89,7 +92,7 @@ export function WhyChooseUs() {
         </motion.p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 relative z-10">
         {reasons.map((reason, index) => (
           <ReasonCard
             key={index}
@@ -101,7 +104,7 @@ export function WhyChooseUs() {
       </div>
 
       {/* Stats Section */}
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
@@ -110,10 +113,10 @@ export function WhyChooseUs() {
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { value: '150K+', label: 'Active Users' },
-            { value: '10K+', label: 'Jobs Secured' },
-            { value: '95%', label: 'Success Rate' },
-            { value: '4.2/5', label: 'User Rating' },
+            { value: 150, suffix: 'K+', label: 'Active Users', decimals: 0 },
+            { value: 10, suffix: 'K+', label: 'Jobs Secured', decimals: 0 },
+            { value: 95, suffix: '%', label: 'Success Rate', decimals: 0 },
+            { value: 4.2, suffix: '/5', label: 'User Rating', decimals: 1 },
           ].map((stat, index) => (
             <motion.div
               key={index}
@@ -124,7 +127,12 @@ export function WhyChooseUs() {
               className="text-center"
             >
               <div className="text-3xl lg:text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-                {stat.value}
+                <Counter 
+                  end={stat.value} 
+                  suffix={stat.suffix}
+                  decimals={stat.decimals}
+                  duration={2.5}
+                />
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 {stat.label}
@@ -132,7 +140,7 @@ export function WhyChooseUs() {
             </motion.div>
           ))}
         </div>
-      </motion.div>
+      </motion.div> */}
     </section>
   );
 }

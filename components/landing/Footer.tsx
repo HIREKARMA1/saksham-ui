@@ -71,21 +71,13 @@ export function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-6">
-              <div className="relative w-10 h-10">
+              <div className="relative w-[150px] h-16">
                 <Image
                   src="/images/HKlogowhite.png"
                   alt="HireKarma Logo"
                   fill
                   className="object-contain"
                 />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold text-white">
-                  Saksham
-                </span>
-                <span className="text-xs text-gray-400 -mt-1">
-                  by HireKarma
-                </span>
               </div>
             </Link>
             
@@ -204,12 +196,23 @@ export function Footer() {
 
         {/* Bottom Footer */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Copyright */}
+          {/* Copyright & Powered By */}
           <div className="text-sm text-gray-400 text-center md:text-left">
-            <p className="flex items-center gap-1 flex-wrap justify-center md:justify-start">
+            <p className="flex items-center gap-1 flex-wrap justify-center md:justify-start mb-2">
               {t('footer.copyright')} Made with 
               <Heart className="w-4 h-4 text-red-500 fill-red-500 mx-1" /> 
               in India
+            </p>
+            <p className="text-gray-500">
+              Powered by{' '}
+              <a 
+                href="https://www.hirekarma.in/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary-400 hover:text-primary-300 transition-colors font-medium"
+              >
+                HireKarma Pvt Ltd
+              </a>
             </p>
           </div>
 
@@ -229,28 +232,6 @@ export function Footer() {
                 {social.icon}
               </motion.a>
             ))}
-          </div>
-        </div>
-
-        {/* Newsletter Signup (Optional) */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
-          <div className="max-w-md mx-auto text-center">
-            <h4 className="text-white font-semibold text-lg mb-2">
-              Stay Updated
-            </h4>
-            <p className="text-gray-400 mb-4">
-              Subscribe to our newsletter for the latest updates and tips
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              <button className="btn-primary whitespace-nowrap">
-                Subscribe
-              </button>
-            </div>
           </div>
         </div>
       </div>

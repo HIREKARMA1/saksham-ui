@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Card } from '@/components/ui/card';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 import { cn } from '@/lib/utils';
 
 interface Feature {
@@ -81,8 +82,9 @@ export function FeatureCards() {
   ];
 
   return (
-    <section id="features" className="section-container bg-gray-50 dark:bg-gray-900/50">
-      <div className="text-center mb-16">
+    <section id="features" className="section-container bg-gray-50 dark:bg-gray-900/50 relative overflow-hidden">
+      <AnimatedBackground variant="alternate" />
+      <div className="text-center mb-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -115,7 +117,7 @@ export function FeatureCards() {
         </motion.p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 relative z-10">
         {features.map((feature, index) => (
           <FeatureCard
             key={feature.id}

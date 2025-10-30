@@ -7,8 +7,9 @@ import {
   FeatureCards,
   WhyChooseUs,
   HowItWorks,
-  Testimonials,
-  Partners,
+  ProblemSolution,
+  // Testimonials,
+  // Partners,
   FAQ,
 } from '@/components/landing';
 
@@ -27,11 +28,14 @@ export default function Home() {
       {/* How It Works Section */}
       <HowItWorks />
 
+      {/* Problem Solution Section */}
+      <ProblemSolution />
+
       {/* Testimonials Section */}
-      <Testimonials />
+      {/* <Testimonials /> */}
 
       {/* Partners Section */}
-      <Partners />
+      {/* <Partners /> */}
 
       {/* FAQ Section */}
       <FAQ />
