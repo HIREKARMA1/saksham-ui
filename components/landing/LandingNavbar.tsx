@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Moon, Sun, Globe } from 'lucide-react';
+import { User, Moon, Sun, Globe, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Language } from '@/lib/i18n';
@@ -19,9 +19,11 @@ import { cn } from '@/lib/utils';
 
 interface LandingNavbarProps {
   className?: string;
+  onToggleSidebar?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
-export function LandingNavbar({ className }: LandingNavbarProps) {
+export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }: LandingNavbarProps) {
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -29,11 +31,11 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
 
   useEffect(() => {
     setMounted(true);
-    
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -63,28 +65,50 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo - Simple and clean */}
-          <Link href="/" className="flex items-center group">
-            <div className="relative w-[150px] h-16 transition-transform group-hover:scale-105">
-              {theme === 'dark' ? (
-                <Image
-                  src="/images/HKlogowhite.png"
-                  alt="Saksham AI Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              ) : (
-                <Image
-                  src="/images/HKlogoblack.png"
-                  alt="Saksham AI Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              )}
-            </div>
-          </Link>
+          {/* Left section - Logo and Collapse button */}
+          <div className="flex items-center gap-3">
+            {/* Logo - Simple and clean */}
+            <Link href="/" className="flex items-center group">
+              <div className="relative w-[150px] h-16 transition-transform group-hover:scale-105">
+                {theme === 'dark' ? (
+                  <Image
+                    src="/images/HKlogowhite.png"
+                    alt="Saksham AI Logo"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                ) : (
+                  <Image
+                    src="/images/HKlogoblack.png"
+                    alt="Saksham AI Logo"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                )}
+              </div>
+            </Link>
+
+            {/* Sidebar Toggle Button - Desktop only */}
+            {onToggleSidebar && (
+              <button
+                onClick={onToggleSidebar}
+                className={cn(
+                  'hidden lg:flex p-2 rounded-lg transition-colors',
+                  'hover:bg-gray-100 dark:hover:bg-gray-800',
+                  'text-gray-700 dark:text-gray-300'
+                )}
+                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {isSidebarCollapsed ? (
+                  <PanelLeft className="w-5 h-5" />
+                ) : (
+                  <PanelLeftClose className="w-5 h-5" />
+                )}
+              </button>
+            )}
+          </div>
 
           {/* Right Section - Simple Actions */}
           <div className="flex items-center gap-3">
@@ -102,8 +126,8 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
                   <Globe className="w-5 h-5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="end" 
+              <DropdownMenuContent
+                align="end"
                 className="w-48"
                 sideOffset={8}
               >
@@ -157,8 +181,8 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
                   <User className="w-5 h-5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="end" 
+              <DropdownMenuContent
+                align="end"
                 className="w-48"
                 sideOffset={8}
               >

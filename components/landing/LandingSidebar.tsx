@@ -1,21 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard,
   Lightbulb,
   Users,
-  Briefcase,
-  FileText,
-  BarChart3,
-  MessageSquare,
-  HelpCircle,
-  ChevronLeft,
-  ChevronRight,
   Brain,
   Target,
-  Rocket
+  Rocket,
+  MessageSquare,
+  HelpCircle
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import Link from 'next/link';
@@ -31,10 +26,10 @@ interface SidebarItem {
 
 interface LandingSidebarProps {
   className?: string;
+  isCollapsed: boolean;
 }
 
-export function LandingSidebar({ className }: LandingSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) {
   const { t } = useTranslation();
 
   const mainFeatures: SidebarItem[] = [
@@ -106,19 +101,6 @@ export function LandingSidebar({ className }: LandingSidebarProps) {
       )}
     >
       <div className="flex flex-col h-full">
-        {/* Collapse/Expand Button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-8 bg-primary-500 text-white rounded-full p-1.5 shadow-lg hover:bg-primary-600 transition-colors z-10"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
-
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8">
           {/* Main Features Section */}
