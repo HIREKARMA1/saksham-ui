@@ -81,10 +81,13 @@ export default function AssessmentPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const assessmentId = searchParams?.get('id')
+<<<<<<< HEAD
 
     const [assessment, setAssessment] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+=======
+>>>>>>> a8ae9dd1c0c81d163d0f38c52266b2d296b0fcf6
 
     useEffect(() => {
         if (!assessmentId) {

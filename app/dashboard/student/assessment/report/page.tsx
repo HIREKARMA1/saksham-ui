@@ -29,7 +29,11 @@ import {
     Scatter, ScatterChart, ZAxis, Funnel, FunnelChart, LabelList
 } from 'recharts'
 import toast from 'react-hot-toast'
+<<<<<<< HEAD
 import PlaylistTab from '@/components/assessment/report/PlaylistTab'
+=======
+import Playlist from '@/components/assessment/Playlist'
+>>>>>>> a8ae9dd1c0c81d163d0f38c52266b2d296b0fcf6
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
@@ -639,6 +643,7 @@ export default function AssessmentReportPage() {
 
                 {/* Enhanced Tabs with Better Navigation */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+<<<<<<< HEAD
                     <div className="flex items-center justify-between mb-4">
                         <TabsList className="grid grid-cols-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
                             <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
@@ -679,6 +684,48 @@ export default function AssessmentReportPage() {
                             {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                     </div>
+=======
+<div className="flex items-center justify-between mb-4">
+    <TabsList className="grid grid-cols-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+        <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Overview
+        </TabsTrigger>
+        <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <Activity className="h-4 w-4 mr-2" />
+            Analytics
+        </TabsTrigger>
+        <TabsTrigger value="detailed" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <Eye className="h-4 w-4 mr-2" />
+            Rounds
+        </TabsTrigger>
+        <TabsTrigger value="questions" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Questions
+        </TabsTrigger>
+        <TabsTrigger value="insights" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <Brain className="h-4 w-4 mr-2" />
+            AI Insights
+        </TabsTrigger>
+        <TabsTrigger value="playlist" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Learning
+        </TabsTrigger>
+    </TabsList>
+    
+    {/* Filter Toggle Button */}
+    <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => setShowFilters(!showFilters)}
+        className="flex items-center gap-2"
+    >
+        <Filter className="h-4 w-4" />
+        Filters
+        {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+    </Button>
+</div>
+>>>>>>> a8ae9dd1c0c81d163d0f38c52266b2d296b0fcf6
 
                     {/* Advanced Filters Panel */}
                     {showFilters && (
@@ -1728,10 +1775,19 @@ export default function AssessmentReportPage() {
 
                     {/* Playlist Tab */}
                     <TabsContent value="playlist" className="space-y-6">
+<<<<<<< HEAD
                         <PlaylistTab assessmentId={assessmentId || ''} />
                     </TabsContent>
 
                     
+=======
+                        {assessmentId ? (
+                            <Playlist assessmentId={assessmentId} />
+                        ) : (
+                            <div className="text-gray-600">No assessment selected</div>
+                        )}
+                    </TabsContent>
+>>>>>>> a8ae9dd1c0c81d163d0f38c52266b2d296b0fcf6
                 </Tabs>
 
                 {/* Next Steps */}
@@ -1752,6 +1808,7 @@ export default function AssessmentReportPage() {
                                 Update Profile
                             </Button>
                         </div>
+                        <Playlist assessmentId={assessmentId ?? ''} />
                     </CardContent>
                 </Card>
             </div>
