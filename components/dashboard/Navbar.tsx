@@ -11,20 +11,32 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { LogOut, User as UserIcon, Settings } from 'lucide-react'
+import { LogOut, User as UserIcon, Settings, Menu } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface NavbarProps {
     user: User | null
+    onToggleSidebar?: () => void
 }
 
-export function Navbar({ user }: NavbarProps) {
+export function Navbar({ user, onToggleSidebar }: NavbarProps) {
     const { logout } = useAuth()
 
     return (
         <nav className="border-b bg-white dark:bg-gray-800 px-6 py-4">
             <div className="flex items-center justify-between">
-                <div>
+                <div className="flex items-center gap-4">
+                    {/* Hamburger Menu Button - Only visible on small screens */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden"
+                        onClick={onToggleSidebar}
+                        aria-label="Toggle sidebar"
+                    >
+                        <Menu className="h-6 w-6" />
+                    </Button>
+                    
                     <h1 className="text-2xl font-bold text-primary-600">Saksham AI</h1>
                 </div>
 

@@ -383,48 +383,73 @@ export function GroupDiscussionRound({
                 return;
             }
 
-            window.speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            const voice = getVoiceForAgent(agentName);
-            
-            if (voice) {
-                utterance.voice = voice;
+            // Truncate text if too long to prevent speech synthesis errors
+            const MAX_SPEECH_LENGTH = 300; // characters
+            let speechText = text;
+            if (text.length > MAX_SPEECH_LENGTH) {
+                speechText = text.substring(0, MAX_SPEECH_LENGTH) + '...';
             }
 
-            if (agentName.includes('Aarav')) {
-                utterance.rate = 0.95;
-                utterance.pitch = 0.9;
-                utterance.volume = 1.0;
-            } else if (agentName.includes('Meera')) {
-                utterance.rate = 1.05;
-                utterance.pitch = 1.2;
-                utterance.volume = 1.0;
-            } else if (agentName.includes('Rahul')) {
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-                utterance.volume = 1.0;
-            }
+            try {
+                window.speechSynthesis.cancel();
 
-            utterance.onstart = () => {
-                setCurrentSpeakingAgent(agentName);
-                setIsAISpeaking(true);
-            };
+                const utterance = new SpeechSynthesisUtterance(speechText);
+                const voice = getVoiceForAgent(agentName);
+                
+                if (voice) {
+                    utterance.voice = voice;
+                }
 
-            utterance.onend = () => {
+                if (agentName.includes('Aarav')) {
+                    utterance.rate = 0.95;
+                    utterance.pitch = 0.9;
+                    utterance.volume = 1.0;
+                } else if (agentName.includes('Meera')) {
+                    utterance.rate = 1.05;
+                    utterance.pitch = 1.2;
+                    utterance.volume = 1.0;
+                } else if (agentName.includes('Rahul')) {
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                }
+
+                utterance.onstart = () => {
+                    setCurrentSpeakingAgent(agentName);
+                    setIsAISpeaking(true);
+                };
+
+                utterance.onend = () => {
+                    setCurrentSpeakingAgent(null);
+                    setIsAISpeaking(false);
+                    resolve();
+                };
+
+                utterance.onerror = (error) => {
+                    // Silently handle speech errors - they're not critical for functionality
+                    // The UI will continue to work even if speech fails
+                    setCurrentSpeakingAgent(null);
+                    setIsAISpeaking(false);
+                    resolve();
+                };
+
+                // Add timeout to prevent hanging
+                setTimeout(() => {
+                    if (window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                        setCurrentSpeakingAgent(null);
+                        setIsAISpeaking(false);
+                        resolve();
+                    }
+                }, 30000); // 30 second timeout
+
+                window.speechSynthesis.speak(utterance);
+            } catch (err) {
+                // Gracefully handle any speech synthesis errors
                 setCurrentSpeakingAgent(null);
                 setIsAISpeaking(false);
                 resolve();
-            };
-
-            utterance.onerror = (error) => {
-                console.error('Speech error:', error);
-                setCurrentSpeakingAgent(null);
-                setIsAISpeaking(false);
-                resolve();
-            };
-
-            window.speechSynthesis.speak(utterance);
+            }
         });
     };
 
@@ -951,26 +976,57 @@ export function GroupDiscussionRound({
                                     setCurrentStep('discussion');
                                     setIsTopicAnnounced(false);
                                     
-                                    const announcement = [
-                                        `Today's discussion topic is: ${topic.title}.`,
-                                        topic.content,
-                                        "Key points to consider:",
-                                        ...(topic.followUpQuestions || []).map(q => `${q}`),
-                                        "You can now share your thoughts.",
-                                        "Remember to click Stop Speaking when you finish."
-                                    ].join(' ');
-                                    
-                                    const utterance = new SpeechSynthesisUtterance(announcement);
-                                    utterance.lang = 'en-US';
-                                    utterance.rate = 0.9;
-                                    
-                                    utterance.onend = () => {
+                                    try {
+                                        // Create a concise announcement - long text causes speech errors
+                                        const MAX_ANNOUNCEMENT_LENGTH = 400; // characters
+                                        let announcement = `Today's discussion topic is: ${topic.title}.`;
+                                        
+                                        // Add a shortened version of the content if available
+                                        if (topic.content) {
+                                            const contentPreview = topic.content.length > 150 
+                                                ? topic.content.substring(0, 150) + '...'
+                                                : topic.content;
+                                            announcement += ' ' + contentPreview;
+                                        }
+                                        
+                                        announcement += ' You can now share your thoughts. Remember to click Stop Speaking when you finish.';
+                                        
+                                        // Ensure total length is within limits
+                                        if (announcement.length > MAX_ANNOUNCEMENT_LENGTH) {
+                                            announcement = announcement.substring(0, MAX_ANNOUNCEMENT_LENGTH) + '...';
+                                        }
+                                        
+                                        const utterance = new SpeechSynthesisUtterance(announcement);
+                                        utterance.lang = 'en-US';
+                                        utterance.rate = 0.9;
+                                        
+                                        utterance.onend = () => {
+                                            setIsTopicAnnounced(true);
+                                            toast.success('You can now start speaking!');
+                                        };
+                                        
+                                        utterance.onerror = (error) => {
+                                            // Silently handle error and let user proceed
+                                            setIsTopicAnnounced(true);
+                                            toast.success('You can now start speaking!');
+                                        };
+                                        
+                                        // Timeout fallback in case speech hangs
+                                        setTimeout(() => {
+                                            if (!isTopicAnnounced) {
+                                                window.speechSynthesis.cancel();
+                                                setIsTopicAnnounced(true);
+                                                toast.success('You can now start speaking!');
+                                            }
+                                        }, 20000); // 20 second timeout
+                                        
+                                        toast.success('Listen to the introduction...');
+                                        window.speechSynthesis.speak(utterance);
+                                    } catch (err) {
+                                        // If speech fails, just proceed without it
                                         setIsTopicAnnounced(true);
                                         toast.success('You can now start speaking!');
-                                    };
-                                    
-                                    toast.success('Listen to the introduction...');
-                                    window.speechSynthesis.speak(utterance);
+                                    }
                                 }}
                                 size="lg"
                                 disabled={!micTested}
