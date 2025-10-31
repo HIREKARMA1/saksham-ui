@@ -66,7 +66,7 @@ export function DashboardLayout({ children, requiredUserType }: DashboardLayoutP
                 <main
                     className={cn(
                         "flex-1 transition-all duration-300 p-6 overflow-y-auto",
-                        "pt-20 lg:pt-6", // Add top padding on mobile for mobile navbar
+                        "pt-20 lg:pt-24", // Add top padding on mobile for mobile navbar
                         isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
                     )}
                 >

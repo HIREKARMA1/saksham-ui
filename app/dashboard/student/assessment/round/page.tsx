@@ -770,7 +770,8 @@ export default function AssessmentRoundPage() {
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            </DashboardLayout>
         )
     }
 
@@ -790,7 +791,6 @@ export default function AssessmentRoundPage() {
         )
     }
 
-    ;
     // ========== CHAT INTERFACE FOR INTERVIEW ROUNDS ==========
     if (isVoiceRound) {
         const isHR = roundType === 'hr_interview'
@@ -929,7 +929,8 @@ export default function AssessmentRoundPage() {
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            </DashboardLayout>
         )
     }
 

@@ -16,14 +16,6 @@ import {
     ComposedChart, Area, LabelList
 } from 'recharts'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
-
 // Hover-enabled stat card component
 function StatCard({ icon: Icon, label, value, color, bgColor, colorClass }: { icon: any, label: string, value: string | number, color: string, bgColor: string, colorClass: string }) {
     const [isHovered, setIsHovered] = useState(false)
@@ -235,7 +227,7 @@ export default function StudentDashboard() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+        <DashboardLayout requiredUserType="student">
             <div className="space-y-6">
                 {/* Header - Matching Assessment Overview Style with Hover Animations */}
                 <motion.div 
