@@ -50,6 +50,12 @@ export function MobileNavbar({ activeFeature, onFeatureChange }: MobileNavbarPro
         return;
       }
       
+      // For dashboard link when logged out, redirect to login
+      if (item.id === 'dashboard') {
+        router.push('/auth/login');
+        return;
+      }
+      
       // On homepage without user, use feature change callback (show inline preview)
       onFeatureChange?.(item.id);
     },
