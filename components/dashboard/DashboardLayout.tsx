@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
 import { Loader } from '@/components/ui/loader'
+import { DropdownMenuProvider } from '@/components/ui/dropdown-menu'
 import { LucideIcon } from 'lucide-react'
 
 interface SidebarItem {
@@ -56,15 +57,17 @@ export function DashboardLayout({ children, sidebarItems, requiredUserType }: Da
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Navbar user={user} onToggleSidebar={toggleSidebar} />
-            <div className="flex">
-                <Sidebar items={sidebarItems} isOpen={sidebarOpen} onClose={closeSidebar} />
-                <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-73px)]">
-                    {children}
-                </main>
+        <DropdownMenuProvider>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <Navbar user={user} onToggleSidebar={toggleSidebar} />
+                <div className="flex">
+                    <Sidebar items={sidebarItems} isOpen={sidebarOpen} onClose={closeSidebar} />
+                    <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-73px)]">
+                        {children}
+                    </main>
+                </div>
             </div>
-        </div>
+        </DropdownMenuProvider>
     )
 }
 

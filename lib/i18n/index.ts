@@ -173,7 +173,7 @@ const translations: Translations = {
     'nav.contact': 'Contact',
     
     // Hero Section
-    'hero.title': 'Meet Solviq AI — Because the World Won\'t Wait for You to Be Ready',
+    'hero.title': 'The World Won\'t Wait. Be Ready with Solviq AI',
     'hero.subtitle': 'You\'ve got potential. Solviq AI makes sure the world sees it — by pushing you through real simulations, decoding your strengths, and building your personalized skill path.',
     'hero.cta.primary': 'Get Started',
     'hero.cta.secondary': 'View Demo',
@@ -330,7 +330,7 @@ const translations: Translations = {
     'nav.contact': 'संपर्क करें',
     
     // Hero Section
-    'hero.title': 'मिलिए Solviq AI से — क्योंकि दुनिया आपके तैयार होने का इंतजार नहीं करेगी',
+    'hero.title': 'दुनिया इंतजार नहीं करेगी। Solviq AI के साथ तैयार रहें',
     'hero.subtitle': 'आपमें क्षमता है। Solviq AI यह सुनिश्चित करता है कि दुनिया इसे देखे — वास्तविक सिमुलेशन के माध्यम से आपको आगे बढ़ाकर, आपकी ताकत का विश्लेषण करके, और आपका व्यक्तिगत कौशल मार्ग बनाकर।',
     'hero.cta.primary': 'शुरू करें',
     'hero.cta.secondary': 'डेमो देखें',
@@ -487,7 +487,7 @@ const translations: Translations = {
     'nav.contact': 'ଯୋଗାଯୋଗ',
     
     // Hero Section
-    'hero.title': 'Solviq AI ସାଥିରେ ମିଳନ୍ତୁ — କାରଣ ପୃଥିବୀ ଆପଣଙ୍କ ପ୍ରସ୍ତୁତ ହେବା ପାଇଁ ଅପେକ୍ଷା କରିବ ନାହିଁ',
+    'hero.title': 'ପୃଥିବୀ ଅପେକ୍ଷା କରିବ ନାହିଁ। Solviq AI ସହିତ ପ୍ରସ୍ତୁତ ରୁହନ୍ତୁ',
     'hero.subtitle': 'ଆପଣଙ୍କ ମଧ୍ୟରେ କ୍ଷମତା ଅଛି। Solviq AI ନିଶ୍ଚିତ କରେ ଯେ ପୃଥିବୀ ଏହାକୁ ଦେଖିବ — ବାସ୍ତବ ସିମୁଲେସନ୍ ମାଧ୍ୟମରେ ଆପଣଙ୍କୁ ଆଗକୁ ଯାଏ, ଆପଣଙ୍କର ଶକ୍ତିର ବିଶ୍ଳେଷଣ କରେ, ଏବଂ ଆପଣଙ୍କର ବ୍ୟକ୍ତିଗତ ଦକ୍ଷତା ପଥ ଗଠନ କରେ।',
     'hero.cta.primary': 'ଆରମ୍ଭ କରନ୍ତୁ',
     'hero.cta.secondary': 'ଡେମୋ ଦେଖନ୍ତୁ',

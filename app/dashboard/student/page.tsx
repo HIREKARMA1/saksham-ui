@@ -9,26 +9,12 @@ import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
 import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
-
-// Lazy-load Recharts on client only
-const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
-const LineChart = dynamic(() => import('recharts').then(m => m.LineChart), { ssr: false })
-const Line = dynamic(() => import('recharts').then(m => m.Line), { ssr: false })
-const CartesianGrid = dynamic(() => import('recharts').then(m => m.CartesianGrid), { ssr: false })
-const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false })
-const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false })
-const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip as any), { ssr: false })
-const Legend = dynamic(() => import('recharts').then(m => m.Legend as any), { ssr: false })
-const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
-const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
-const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
-const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
-const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
-const ComposedChart = dynamic(() => import('recharts').then(m => m.ComposedChart), { ssr: false })
-const Area = dynamic(() => import('recharts').then(m => m.Area), { ssr: false })
-const LabelList = dynamic(() => import('recharts').then(m => m.LabelList), { ssr: false })
+import { 
+    ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, 
+    Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell, 
+    ComposedChart, Area, LabelList
+} from 'recharts'
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
@@ -153,6 +139,7 @@ export default function StudentDashboard() {
     const [stats, setStats] = useState<any>(null)
     const [analytics, setAnalytics] = useState<any>(null)
     const [latestReport, setLatestReport] = useState<{ id: string | null, date: string | null }>({ id: null, date: null })
+    const [recentReports, setRecentReports] = useState<Array<{ id: string, date: string, score?: number, readiness?: number }>>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -220,10 +207,20 @@ export default function StudentDashboard() {
                 console.log('✅ Final Dashboard Stats:', calculatedStats)
                 setStats(calculatedStats)
                 
-                // Set latest completed report
+                // Set latest completed report and last 3 reports
                 if (completed.length > 0) {
-                    const latest = completed.sort((b: any, c: any) => new Date(c.completed_at || c.started_at).getTime() - new Date(b.completed_at || b.started_at).getTime())[0]
+                    const sorted = completed.sort((b: any, c: any) => new Date(c.completed_at || c.started_at).getTime() - new Date(b.completed_at || b.started_at).getTime())
+                    const latest = sorted[0]
                     setLatestReport({ id: latest.assessment_id, date: latest.completed_at || latest.started_at })
+                    
+                    // Get last 3 reports with scores
+                    const last3Reports = sorted.slice(0, 3).map((assessment: any) => ({
+                        id: assessment.assessment_id,
+                        date: assessment.completed_at || assessment.started_at,
+                        score: assessment.overall_score,
+                        readiness: assessment.readiness_index
+                    }))
+                    setRecentReports(last3Reports)
                 }
             } catch (err) {
                 console.error('Error calculating stats:', err)
@@ -475,39 +472,84 @@ export default function StudentDashboard() {
                             </div>
                                 
                                 <div className="flex flex-col gap-4 relative z-10">
-                                    <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+                                    {/* Recent Reports List */}
+                                    {recentReports.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {recentReports.map((report, index) => (
+                                                <motion.div
+                                                    key={report.id}
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: index * 0.1 }}
+                                                    whileHover={{ scale: 1.02 }}
+                                                >
                                     <Button
-                                        disabled={!latestReport.id}
                                         onClick={() => {
-                                            if (latestReport.id) {
-                                                window.location.href = `/dashboard/student/assessment/report?id=${latestReport.id}`
-                                            }
-                                        }}
-                                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-base font-semibold"
-                                    >
-                                        {latestReport.id ? 'View Latest Report' : 'No completed assessments yet'}
+                                                            window.location.href = `/dashboard/student/assessment/report?id=${report.id}`
+                                                        }}
+                                                        className="w-full justify-start p-4 h-auto bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-800 border-2 border-indigo-200/50 dark:border-indigo-800/50 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all duration-300 group"
+                                                        variant="outline"
+                                                    >
+                                                        <div className="flex items-center gap-3 w-full">
+                                                            <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-lg group-hover:scale-110 transition-transform">
+                                                                <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                                                            </div>
+                                                            <div className="flex-1 text-left">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                                        Report #{recentReports.length - index}
+                                                                    </p>
+                                                                    {index === 0 && (
+                                                                        <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs px-2 py-0">
+                                                                            Latest
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                                    {new Date(report.date).toLocaleString()}
+                                                                </p>
+                                                                {report.score && (
+                                                                    <div className="flex items-center gap-4 mt-2">
+                                                                        <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                                                            Score: <span className="font-bold">{report.score}%</span>
+                                                                        </span>
+                                                                        {report.readiness && (
+                                                                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                                                                                Readiness: <span className="font-bold">{report.readiness}%</span>
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <TrendingUp className="h-4 w-4 text-indigo-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors" />
+                                                        </div>
                                     </Button>
-                                    </motion.div>
-                                    
-                                    {latestReport.date && (
-                                        <div className="flex items-center gap-2 p-4 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-indigo-200/50 dark:border-indigo-800/50">
-                                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                                                <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Last completed</p>
-                                                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
-                                                    {new Date(latestReport.date).toLocaleString()}
-                                                </p>
-                                            </div>
+                                                </motion.div>
+                                            ))}
                                         </div>
+                                    ) : (
+                                        <motion.div 
+                                            className="p-8 rounded-xl bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-950/80 dark:to-purple-950/80 backdrop-blur-sm border-2 border-dashed border-indigo-300 dark:border-indigo-700 text-center"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                        >
+                                            <div className="p-3 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                                                <ClipboardList className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
+                                            </div>
+                                            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                                                No assessments completed yet
+                                            </p>
+                                            <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                                                Complete your first assessment to view reports
+                                            </p>
+                                        </motion.div>
                                     )}
                                     
                                     <Link href="/dashboard/student/assessment/history">
                                         <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
                                             <Button 
                                                 variant="outline" 
-                                                className="w-full border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-all duration-300 py-6 text-base font-semibold"
+                                                className="w-full border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-all duration-300 py-4 text-base font-semibold"
                                             >
                                         Browse All Reports
                                     </Button>
@@ -663,6 +705,16 @@ export default function StudentDashboard() {
                                             <CardContent className="relative z-10">
                                                 <ResponsiveContainer width="100%" height={400}>
                                             <PieChart>
+                                                        <defs>
+                                                            <linearGradient id="correctGradient" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                                                                <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                                                            </linearGradient>
+                                                            <linearGradient id="incorrectGradient" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#ef4444" stopOpacity={1}/>
+                                                                <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                                                            </linearGradient>
+                                                        </defs>
                                                         <Pie 
                                                             dataKey="value" 
                                                             data={[
@@ -671,10 +723,12 @@ export default function StudentDashboard() {
                                                             ]} 
                                                             outerRadius={120} 
                                                             innerRadius={60}
-                                                            label
+                                                            label={({ name, percent, value }: any) => `${value} (${(percent * 100).toFixed(0)}%)`}
+                                                            animationBegin={0}
+                                                            animationDuration={800}
                                                         >
-                                                            <Cell fill="#10b981" stroke="#fff" strokeWidth={3} />
-                                                            <Cell fill="#ef4444" stroke="#fff" strokeWidth={3} />
+                                                            <Cell fill="url(#correctGradient)" stroke="#fff" strokeWidth={3} />
+                                                            <Cell fill="url(#incorrectGradient)" stroke="#fff" strokeWidth={3} />
                                                 </Pie>
                                                         <Tooltip 
                                                             contentStyle={{ 
@@ -683,10 +737,16 @@ export default function StudentDashboard() {
                                                                 borderRadius: '8px',
                                                                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                                                             }}
+                                                            labelStyle={{ color: '#1f2937', fontWeight: 'bold' }}
+                                                            formatter={(value: any, name: string) => [value, name]}
                                                         />
                                                         <Legend 
                                                             wrapperStyle={{ paddingTop: '15px' }}
                                                             iconType="circle"
+                                                            formatter={(value) => {
+                                                                if (value === 'Correct') return <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '14px' }}>✓ Correct</span>
+                                                                return <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '14px' }}>✗ Incorrect</span>
+                                                            }}
                                                         />
                                             </PieChart>
                                         </ResponsiveContainer>
@@ -770,22 +830,25 @@ export default function StudentDashboard() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <Card className="relative overflow-hidden border-0 shadow-lg">
-                                    <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-gray-200/30 to-gray-100/10 blur-2xl" />
-                                    <CardHeader className="relative z-10 border-b border-gray-200 dark:border-gray-700">
+                                <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950">
+                                    <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-indigo-300/30 to-purple-300/20 blur-2xl" />
+                                    <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-gradient-to-tr from-pink-300/25 to-rose-300/15 blur-2xl" />
+                                    <CardHeader className="relative z-10 border-b border-indigo-200 dark:border-indigo-700">
                                         <CardTitle className="flex items-center gap-3 text-lg font-bold">
-                                            <div className="p-2 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 shadow-md">
+                                            <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md">
                                                 <ClipboardList className="h-5 w-5 text-white" />
                                             </div>
                                             Performance Analytics
                                         </CardTitle>
-                                    <CardDescription>Detailed analytics will be available after completing assessments</CardDescription>
+                                        <CardDescription className="text-indigo-700 dark:text-indigo-300">Detailed analytics will be available after completing assessments</CardDescription>
                                 </CardHeader>
                                     <CardContent className="relative z-10">
-                                        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                                            <ClipboardList className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                                            <p className="text-lg font-medium">Complete your first assessment to see analytics</p>
-                                            <p className="text-sm mt-2">Track your progress and identify improvement areas</p>
+                                        <div className="text-center py-12">
+                                            <div className="p-4 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                                                <ClipboardList className="h-12 w-12 text-indigo-600 dark:text-indigo-300" />
+                                            </div>
+                                            <p className="text-lg font-medium text-indigo-900 dark:text-indigo-100">Complete your first assessment to see analytics</p>
+                                            <p className="text-sm mt-2 text-indigo-700 dark:text-indigo-300">Track your progress and identify improvement areas</p>
                                     </div>
                                 </CardContent>
                             </Card>

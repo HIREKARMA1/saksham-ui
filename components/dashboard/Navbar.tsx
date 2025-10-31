@@ -37,7 +37,7 @@ export function Navbar({ user, onToggleSidebar }: NavbarProps) {
                         <Menu className="h-6 w-6" />
                     </Button>
                     
-                    <h1 className="text-2xl font-bold text-primary-600">Saksham AI</h1>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Solviq AI</h1>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -67,7 +67,7 @@ export function Navbar({ user, onToggleSidebar }: NavbarProps) {
                                 Settings
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={logout} className="text-red-600">
+                            <DropdownMenuItem onClick={logout} className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
                                 <LogOut className="mr-2 h-4 w-4" />
                                 Logout
                             </DropdownMenuItem>
