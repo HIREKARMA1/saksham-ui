@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
   LandingLayout,
@@ -21,11 +22,19 @@ const JobsPage = dynamic(() => import('@/app/dashboard/student/jobs/page'), { ss
 const AutoApplyPage = dynamic(() => import('@/app/dashboard/student/auto-apply/page'), { ssr: false });
 
 export default function Home() {
+  const pathname = usePathname();
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
+
+  // Reset activeFeature when on root path
+  useEffect(() => {
+    if (pathname === '/') {
+      setActiveFeature(null);
+    }
+  }, [pathname]);
 
   const handleFeatureChange = (featureId: string | null) => {
     setActiveFeature(featureId);
-    
+
     // Scroll to top when switching features
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

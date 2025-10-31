@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api'
 import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 // Lazy-load Recharts on client only
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
@@ -25,14 +26,6 @@ const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
 const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
 
 export default function StudentDashboard() {
     const [stats, setStats] = useState<any>(null)
@@ -123,8 +116,16 @@ export default function StudentDashboard() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
-            <div className="space-y-6">
+        <DashboardLayout requiredUserType="student">
+            {/* Background with same style as home page */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 gradient-bg">
+                    <AnimatedBackground variant="default" />
+                </div>
+            </div>
+            
+            {/* Content with margin-top */}
+            <div className="relative z-10 mt-20 space-y-6">
                 {/* Welcome Section - Enhanced */}
                 <div className="bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-950 dark:to-purple-950 rounded-2xl p-6 md:p-8 shadow-sm">
                     <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2">

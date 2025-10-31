@@ -7,14 +7,6 @@ import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
 import { Home, Users, Building2, BarChart3 } from 'lucide-react'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/admin', icon: Home },
-    { name: 'Colleges', href: '/dashboard/admin/colleges', icon: Building2 },
-    { name: 'Students', href: '/dashboard/admin/students', icon: Users },
-    { name: 'Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/dashboard/admin/profile', icon: Users },
-]
-
 export default function AdminDashboard() {
     const [stats, setStats] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -35,7 +27,7 @@ export default function AdminDashboard() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="admin">
+        <DashboardLayout requiredUserType="admin">
             <div className="space-y-6">
                 {/* Welcome Section */}
                 <div>

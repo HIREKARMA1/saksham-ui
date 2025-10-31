@@ -18,13 +18,6 @@ import {
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-]
-
 export default function AssessmentHistoryPage() {
     const [loading, setLoading] = useState(true)
     const [history, setHistory] = useState<any>({ total: 0, assessments: [] })
@@ -87,7 +80,7 @@ export default function AssessmentHistoryPage() {
     })
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+        <DashboardLayout requiredUserType="student">
             <div className="space-y-8">
                 {/* Hero Header with Gradient */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 p-8 text-white">

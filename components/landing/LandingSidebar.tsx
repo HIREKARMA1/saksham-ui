@@ -7,10 +7,13 @@ import {
   Briefcase,
   ClipboardList,
   Zap,
+  LayoutGrid,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { cn } from '@/lib/utils';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface SidebarItem {
   id: string;
@@ -28,6 +31,12 @@ interface LandingSidebarProps {
 
 // Export features array so it can be reused in mobile nav
 export const sidebarFeatures: SidebarItem[] = [
+  {
+    id: 'dashboard',
+    icon: <LayoutGrid className="w-5 h-5" />,
+    label: 'Dashboard',
+    onClick: undefined, // Will be set by component
+  },
   {
     id: 'resume',
     icon: <FileText className="w-5 h-5" />,
@@ -56,22 +65,58 @@ export const sidebarFeatures: SidebarItem[] = [
 
 export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatureChange }: LandingSidebarProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useAuth();
+
+  // Map feature IDs to dashboard routes
+  const getFeatureRoute = (featureId: string): string | null => {
+    if (!user) return null;
+    const baseRoute = `/dashboard/${user.user_type}`;
+    const routeMap: Record<string, string> = {
+      'dashboard': baseRoute,
+      'resume': `${baseRoute}/resume`,
+      'assessment': `${baseRoute}/assessment`,
+      'jobs': `${baseRoute}/jobs`,
+      'auto-apply': `${baseRoute}/auto-apply`,
+    };
+    return routeMap[featureId] || null;
+  };
+
+  // Check if we're in dashboard context
+  const isDashboardContext = pathname?.startsWith('/dashboard');
 
   const features = sidebarFeatures.map(item => ({
     ...item,
-    onClick: () => onFeatureChange?.(item.id),
+    onClick: () => {
+      // If user is logged in, always navigate to dashboard route (regardless of current page)
+      if (user) {
+        const route = getFeatureRoute(item.id);
+        if (route) {
+          router.push(route);
+          return;
+        }
+      }
+
+      // If in dashboard context but no user/route, do nothing
+      if (isDashboardContext) {
+        return;
+      }
+
+      // On homepage without user, use feature change callback (show inline preview)
+      onFeatureChange?.(item.id);
+    },
   }));
 
   return (
     <motion.aside
-      initial={{ x: -280 }}
       animate={{
-        x: 0,
         width: isCollapsed ? 80 : 280
       }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       className={cn(
-        'fixed left-0 top-[64px] h-[calc(100vh-64px)] z-30 overflow-hidden',
+        'fixed left-0 top-20 z-30 overflow-hidden', // top-20 = 80px (navbar height)
+        'h-[calc(100vh-5rem)]', // Full height minus navbar
         'bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg',
         'border-r border-gray-200/50 dark:border-gray-800/50',
         'shadow-lg',
@@ -102,14 +147,27 @@ export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatur
               )}
             </AnimatePresence>
             <nav className="space-y-1">
-              {features.map((item) => (
-                <SidebarButton
-                  key={item.id}
-                  item={item}
-                  isCollapsed={isCollapsed}
-                  isActive={activeFeature === item.id}
-                />
-              ))}
+              {features.map((item) => {
+                // Determine active state based on context
+                let isActive = false;
+                if (isDashboardContext) {
+                  // In dashboard, check if current path matches the feature route
+                  const route = getFeatureRoute(item.id);
+                  isActive = route ? pathname === route || pathname?.startsWith(route + '/') : false;
+                } else {
+                  // On homepage, use activeFeature prop
+                  isActive = activeFeature === item.id;
+                }
+
+                return (
+                  <SidebarButton
+                    key={item.id}
+                    item={item}
+                    isCollapsed={isCollapsed}
+                    isActive={isActive}
+                  />
+                );
+              })}
             </nav>
           </div>
         </div>

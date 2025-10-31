@@ -30,14 +30,7 @@ import {
 import { AxiosError } from 'axios'
 import Link from 'next/link'
 import { toast } from 'sonner'
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 interface JobRecommendation {
     rank: number
@@ -198,7 +191,7 @@ export default function JobRecommendationsPage() {
 
     if (loading) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                     <Loader size="lg" />
                     <p className="text-gray-600 dark:text-gray-400">
@@ -210,15 +203,23 @@ export default function JobRecommendationsPage() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
-            <div className="space-y-6">
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold">Job Recommendations</h1>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        AI-powered job suggestions based on your resume analysis
-                    </p>
+        <DashboardLayout requiredUserType="student">
+            {/* Background with same style as home page */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 gradient-bg">
+                    <AnimatedBackground variant="default" />
                 </div>
+            </div>
+            
+            {/* Content with margin-top */}
+            <div className="relative z-10 mt-20 space-y-6">
+                    {/* Header */}
+                    <div>
+                        <h1 className="text-3xl font-bold">Job Recommendations</h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            AI-powered job suggestions based on your resume analysis
+                        </p>
+                    </div>
 
                 {/* Active Assessment Banner */}
                 {activeAssessment && (

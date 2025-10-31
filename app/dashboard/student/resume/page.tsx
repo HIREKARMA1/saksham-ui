@@ -17,25 +17,13 @@ import {
     AlertCircle, 
     X,
     BarChart,
-    Home,
-    User,
-    Briefcase,
-    ClipboardList,
     TrendingUp,
     Download,
     RefreshCw,
-    Zap
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { AxiosError } from 'axios'
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
@@ -238,7 +226,7 @@ export default function ResumePage() {
 
     if (loadingStatus) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex justify-center py-12">
                     <Loader size="lg" />
                 </div>
@@ -247,15 +235,23 @@ export default function ResumePage() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
-            <div className="space-y-6">
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold">Resume Management</h1>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        Upload your resume and get instant ATS score analysis
-                    </p>
+        <DashboardLayout requiredUserType="student">
+            {/* Background with same style as home page */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 gradient-bg">
+                    <AnimatedBackground variant="default" />
                 </div>
+            </div>
+            
+            {/* Content with margin-top */}
+            <div className="relative z-10 mt-20 space-y-6">
+                    {/* Header */}
+                    <div>
+                        <h1 className="text-3xl font-bold">Resume Management</h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Upload your resume and get instant ATS score analysis
+                        </p>
+                    </div>
 
                 {/* ✅ NEW: Existing Resume Card */}
                 {resumeStatus?.has_resume && !showUploadSection && (

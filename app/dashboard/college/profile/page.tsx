@@ -11,13 +11,6 @@ import { apiClient } from '@/lib/api'
 import { Home, Users, GraduationCap, BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/college', icon: Home },
-    { name: 'Students', href: '/dashboard/college/students', icon: GraduationCap },
-    { name: 'Analytics', href: '/dashboard/college/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/dashboard/college/profile', icon: Users },
-]
-
 export default function CollegeProfile() {
     const [profile, setProfile] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -55,7 +48,7 @@ export default function CollegeProfile() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="college">
+        <DashboardLayout requiredUserType="college">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold">College Profile</h1>

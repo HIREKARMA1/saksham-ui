@@ -50,12 +50,6 @@ const extractErrorMessage = (error: any): string => {
     return error.message || 'An error occurred'
 }
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-]
 
 // Default labels by round number (used only as a fallback)
 const roundNames = {
@@ -598,7 +592,7 @@ export default function AssessmentRoundPage() {
 
     if (loading) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex justify-center items-center min-h-screen">
                     <div className="text-center max-w-lg px-6">
                         <Loader size="lg" />
@@ -623,7 +617,7 @@ export default function AssessmentRoundPage() {
         // Ensure we have valid roundData with round_id before rendering
         if (!roundData || (!roundData.round_id && !roundData.id)) {
             return (
-                <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+                <DashboardLayout requiredUserType="student">
                     <div className="flex justify-center items-center min-h-screen">
                         <div className="text-center max-w-lg px-6">
                             <Loader size="lg" />
@@ -640,7 +634,7 @@ export default function AssessmentRoundPage() {
         }
         
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <GroupDiscussionRound
                     roundId={roundData.round_id || roundData.id}
                     assessmentId={assessmentId!}
@@ -672,7 +666,7 @@ export default function AssessmentRoundPage() {
     // Coding Round UI
     if (isCodingRound) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="min-h-screen bg-gray-100">
                     {/* Header */}
                     <div className="bg-indigo-600 text-white p-4">
@@ -698,7 +692,7 @@ export default function AssessmentRoundPage() {
 
     if (!roundData || (!isGroupDiscussionRound && (!roundData.questions || roundData.questions.length === 0))) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="text-center py-12">
                     <h2 className="text-2xl font-bold mb-4">No Questions Available</h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -715,7 +709,7 @@ export default function AssessmentRoundPage() {
     // ========== CHAT INTERFACE FOR INTERVIEW ROUNDS ==========
     if (isVoiceRound) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="h-[calc(100vh-64px)] flex flex-col bg-gradient-to-br from-blue-50 to-purple-50">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 shadow-lg">
