@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Moon, Sun, Globe, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { User, Moon, Sun, Globe, PanelLeftClose, PanelLeft, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Language } from '@/lib/i18n';
@@ -18,6 +18,7 @@ import {
   DropdownMenuProvider,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LandingNavbarProps {
   className?: string;
@@ -30,6 +31,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
+  const { user, loading: authLoading, logout } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -176,42 +178,64 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
               </button>
 
               {/* Profile Icon */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      'p-2 rounded-lg transition-colors',
-                      'bg-primary-500 hover:bg-primary-600',
-                      'text-white'
-                    )}
-                    aria-label="Profile menu"
-                  >
-                    <User className="w-5 h-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-48"
-                  sideOffset={8}
-                >
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/login" className="cursor-pointer">
-                      {t('common.login')}
+              {!authLoading && (
+                <>
+                  {!user ? (
+                    // Not logged in - navigate to login on click
+                    <Link href="/auth/login">
+                      <button
+                        className={cn(
+                          'p-2 rounded-lg transition-colors',
+                          'bg-primary-500 hover:bg-primary-600',
+                          'text-white'
+                        )}
+                        aria-label="Login"
+                      >
+                        <User className="w-5 h-5" />
+                      </button>
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/register" className="cursor-pointer">
-                      {t('common.signUp')}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/student" className="cursor-pointer">
-                      {t('common.dashboard')}
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  ) : (
+                    // Logged in - show dropdown with logout and profile
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={cn(
+                            'p-2 rounded-lg transition-colors',
+                            'bg-primary-500 hover:bg-primary-600',
+                            'text-white'
+                          )}
+                          aria-label="Profile menu"
+                        >
+                          <User className="w-5 h-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48"
+                        sideOffset={8}
+                      >
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/dashboard/${user.user_type}/profile`}
+                            className="cursor-pointer flex items-center gap-2"
+                          >
+                            <User className="w-4 h-4" />
+                            {t('common.profile') || 'Profile'}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={logout}
+                          className="cursor-pointer flex items-center gap-2 text-red-600 dark:text-red-400"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          {t('common.logout') || 'Logout'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

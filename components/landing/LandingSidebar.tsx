@@ -3,16 +3,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard,
   FileText,
   Briefcase,
   ClipboardList,
   Zap,
-  Home
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { AnimatedBackground } from '@/components/ui/animated-background';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 interface SidebarItem {
@@ -33,12 +30,6 @@ export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatur
   const { t } = useTranslation();
 
   const features: SidebarItem[] = [
-    {
-      id: 'home',
-      icon: <Home className="w-5 h-5" />,
-      label: t('nav.home'),
-      onClick: () => onFeatureChange?.(null),
-    },
     {
       id: 'resume',
       icon: <FileText className="w-5 h-5" />,
@@ -109,37 +100,11 @@ export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatur
                   key={item.id}
                   item={item}
                   isCollapsed={isCollapsed}
-                  isActive={activeFeature === item.id || (item.id === 'home' && !activeFeature)}
+                  isActive={activeFeature === item.id}
                 />
               ))}
             </nav>
           </div>
-        </div>
-
-        {/* Bottom Section - Quick Actions */}
-        <div className="border-t border-gray-200 dark:border-gray-800 p-3">
-          <Link
-            href="/auth/login"
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
-              'bg-primary-500 hover:bg-primary-600 text-white font-medium',
-              isCollapsed && 'justify-center'
-            )}
-          >
-            <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-            <AnimatePresence mode="wait">
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="truncate"
-                >
-                  {t('common.dashboard')}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Link>
         </div>
       </div>
     </motion.aside>

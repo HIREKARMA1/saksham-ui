@@ -138,25 +138,19 @@ export function HeroSection() {
             </Button>
           </motion.div>
 
-          {/* Trust Indicators */}
+          {/* Launch Message */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.8 }}
             className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800"
           >
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Trusted by students from top universities
+            <p className="text-base text-gray-600 dark:text-gray-300 mb-2 font-medium">
+              🚀 New Platform Launch
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-8 opacity-60">
-              {/* Placeholder for university logos */}
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="w-24 h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-                />
-              ))}
-            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Join us as we revolutionize interview preparation with AI-powered insights and comprehensive practice tools. Start your journey today!
+            </p>
           </motion.div>
         </div>
       </div>

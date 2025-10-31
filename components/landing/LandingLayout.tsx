@@ -13,29 +13,29 @@ interface LandingLayoutProps {
 }
 
 export function LandingLayout({ children, activeFeature, onFeatureChange }: LandingLayoutProps) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
-      <LandingNavbar 
+      <LandingNavbar
         onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         isSidebarCollapsed={isSidebarCollapsed}
       />
-      
+
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 flex-col">
         {/* Sidebar - Hidden on mobile */}
         <div className="hidden lg:block">
-          <LandingSidebar 
+          <LandingSidebar
             isCollapsed={isSidebarCollapsed}
             activeFeature={activeFeature}
             onFeatureChange={onFeatureChange}
           />
         </div>
-        
+
         {/* Main Content */}
-        <main 
+        <main
           className={cn(
             "flex-1 transition-all duration-300",
             isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
@@ -43,10 +43,10 @@ export function LandingLayout({ children, activeFeature, onFeatureChange }: Land
         >
           {children}
         </main>
-        
+
         {/* Footer - Only show when not viewing a feature */}
         {!activeFeature && (
-          <div 
+          <div
             className={cn(
               "transition-all duration-300",
               isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
