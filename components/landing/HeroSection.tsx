@@ -7,8 +7,12 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Button } from '@/components/ui/button';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 export function HeroSection() {
+  const router = useRouter();
+  const { user } = useAuth();
   const { t } = useTranslation();
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -107,23 +111,30 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/auth/register">
-              <Button
-                size="lg"
-                className="group relative overflow-hidden bg-primary-500 hover:bg-primary-600 text-white text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  {t('hero.cta.primary')}
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-primary-600 to-secondary-600"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="group relative overflow-hidden bg-primary-500 hover:bg-primary-600 text-white text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all"
+              onClick={() => {
+                if (user) {
+                  // If logged in, navigate to assessment page
+                  router.push(`/dashboard/${user.user_type}/assessment`);
+                } else {
+                  // If not logged in, navigate to login
+                  router.push('/auth/login');
+                }
+              }}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {t('hero.cta.primary')}
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </span>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-primary-600 to-secondary-600"
+                initial={{ x: '-100%' }}
+                whileHover={{ x: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            </Button>
 
             <Button
               size="lg"

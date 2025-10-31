@@ -11,7 +11,7 @@ import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/lib/i18n/useTranslation';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, MailIcon } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -82,7 +82,7 @@ export default function LoginPage() {
           {/* Glassmorphism Card */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-900/80 dark:to-gray-800/60 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/30 shadow-2xl" />
-            
+
             <div className="relative p-8 md:p-10">
               {/* Header */}
               <div className="text-center mb-8">
@@ -170,7 +170,7 @@ export default function LoginPage() {
                 </motion.div>
 
                 {/* Forgot Password */}
-                <motion.div
+                {/* <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -182,7 +182,7 @@ export default function LoginPage() {
                   >
                     {t('auth.login.forgotPassword')}
                   </Link>
-                </motion.div>
+                </motion.div> */}
 
                 {/* Submit Button */}
                 <motion.div
@@ -206,7 +206,7 @@ export default function LoginPage() {
                   </Button>
                 </motion.div>
 
-                {/* Sign Up Link */}
+                {/* Contact for Account */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -214,14 +214,16 @@ export default function LoginPage() {
                   className="text-center pt-4"
                 >
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('auth.login.noAccount')}{' '}
-                    <Link
-                      href="/auth/register"
+                    Need an account?{' '}
+                    <a
+                      href="https://www.hirekarma.in/contact"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-primary-600 dark:text-primary-400 hover:underline font-medium inline-flex items-center gap-1"
                     >
-                      {t('auth.login.createAccount')}
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
+                      <MailIcon className="w-3 h-3" />
+                      Contact Us
+                    </a>
                   </p>
                 </motion.div>
               </form>
