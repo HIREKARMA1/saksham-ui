@@ -4,14 +4,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
-  Lightbulb,
-  Users,
-  Brain,
-  Target,
-  Rocket,
-  MessageSquare,
-  HelpCircle,
-  Zap
+  FileText,
+  Briefcase,
+  ClipboardList,
+  Zap,
+  Home
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { AnimatedBackground } from '@/components/ui/animated-background';
@@ -22,78 +19,51 @@ interface SidebarItem {
   id: string;
   icon: React.ReactNode;
   label: string;
-  href?: string;
   onClick?: () => void;
 }
 
 interface LandingSidebarProps {
   className?: string;
   isCollapsed: boolean;
+  activeFeature?: string | null;
+  onFeatureChange?: (featureId: string | null) => void;
 }
 
-export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) {
+export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatureChange }: LandingSidebarProps) {
   const { t } = useTranslation();
 
-  const mainFeatures: SidebarItem[] = [
+  const features: SidebarItem[] = [
     {
-      id: 'hero',
-      icon: <Rocket className="w-5 h-5" />,
+      id: 'home',
+      icon: <Home className="w-5 h-5" />,
       label: t('nav.home'),
-      onClick: () => scrollToSection('hero'),
+      onClick: () => onFeatureChange?.(null),
     },
     {
-      id: 'features',
-      icon: <Brain className="w-5 h-5" />,
-      label: t('nav.features'),
-      onClick: () => scrollToSection('features'),
+      id: 'resume',
+      icon: <FileText className="w-5 h-5" />,
+      label: 'Resume Analysis',
+      onClick: () => onFeatureChange?.('resume'),
     },
     {
-      id: 'why-choose',
-      icon: <Target className="w-5 h-5" />,
-      label: 'Why Choose Us',
-      onClick: () => scrollToSection('why-choose'),
+      id: 'assessment',
+      icon: <ClipboardList className="w-5 h-5" />,
+      label: 'Mock Assessment',
+      onClick: () => onFeatureChange?.('assessment'),
     },
     {
-      id: 'how-it-works',
-      icon: <Lightbulb className="w-5 h-5" />,
-      label: 'How It Works',
-      onClick: () => scrollToSection('how-it-works'),
+      id: 'jobs',
+      icon: <Briefcase className="w-5 h-5" />,
+      label: 'Job Recommendations',
+      onClick: () => onFeatureChange?.('jobs'),
     },
     {
-      id: 'problem-solution',
+      id: 'auto-apply',
       icon: <Zap className="w-5 h-5" />,
-      label: 'Problems & Solutions',
-      onClick: () => scrollToSection('problem-solution'),
+      label: 'Auto Job Apply',
+      onClick: () => onFeatureChange?.('auto-apply'),
     },
   ];
-
-  const additionalFeatures: SidebarItem[] = [
-    // {
-    //   id: 'testimonials',
-    //   icon: <MessageSquare className="w-5 h-5" />,
-    //   label: 'Testimonials',
-    //   onClick: () => scrollToSection('testimonials'),
-    // },
-    // {
-    //   id: 'partners',
-    //   icon: <Users className="w-5 h-5" />,
-    //   label: 'Partners',
-    //   onClick: () => scrollToSection('partners'),
-    // },
-    {
-      id: 'faq',
-      icon: <HelpCircle className="w-5 h-5" />,
-      label: 'FAQ',
-      onClick: () => scrollToSection('faq'),
-    },
-  ];
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   return (
     <motion.aside
@@ -119,7 +89,7 @@ export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) 
       <div className="flex flex-col h-full relative z-10">
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8">
-          {/* Main Features Section */}
+          {/* Features Section */}
           <div>
             <AnimatePresence mode="wait">
               {!isCollapsed && (
@@ -129,41 +99,17 @@ export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) 
                   exit={{ opacity: 0 }}
                   className="px-3 mb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                 >
-                  Explore
+                  Features
                 </motion.h3>
               )}
             </AnimatePresence>
             <nav className="space-y-1">
-              {mainFeatures.map((item) => (
+              {features.map((item) => (
                 <SidebarButton
                   key={item.id}
                   item={item}
                   isCollapsed={isCollapsed}
-                />
-              ))}
-            </nav>
-          </div>
-
-          {/* Additional Features Section */}
-          <div>
-            <AnimatePresence mode="wait">
-              {!isCollapsed && (
-                <motion.h3
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="px-3 mb-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                >
-                  More
-                </motion.h3>
-              )}
-            </AnimatePresence>
-            <nav className="space-y-1">
-              {additionalFeatures.map((item) => (
-                <SidebarButton
-                  key={item.id}
-                  item={item}
-                  isCollapsed={isCollapsed}
+                  isActive={activeFeature === item.id || (item.id === 'home' && !activeFeature)}
                 />
               ))}
             </nav>
@@ -203,9 +149,10 @@ export function LandingSidebar({ className, isCollapsed }: LandingSidebarProps) 
 interface SidebarButtonProps {
   item: SidebarItem;
   isCollapsed: boolean;
+  isActive?: boolean;
 }
 
-function SidebarButton({ item, isCollapsed }: SidebarButtonProps) {
+function SidebarButton({ item, isCollapsed, isActive }: SidebarButtonProps) {
   const content = (
     <div
       className={cn(
@@ -214,7 +161,8 @@ function SidebarButton({ item, isCollapsed }: SidebarButtonProps) {
         'hover:bg-primary-50 dark:hover:bg-primary-900/20',
         'hover:text-primary-600 dark:hover:text-primary-400',
         'cursor-pointer group',
-        isCollapsed && 'justify-center'
+        isCollapsed && 'justify-center',
+        isActive && 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
       )}
     >
       <div className="flex-shrink-0 transition-transform group-hover:scale-110">
@@ -234,14 +182,6 @@ function SidebarButton({ item, isCollapsed }: SidebarButtonProps) {
       </AnimatePresence>
     </div>
   );
-
-  if (item.href) {
-    return (
-      <Link href={item.href}>
-        {content}
-      </Link>
-    );
-  }
 
   return (
     <button

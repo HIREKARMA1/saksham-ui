@@ -1,239 +1,222 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Navbar } from '@/components/Navbar'
-import { useAuth } from '@/hooks/useAuth'
-import { Loader } from '@/components/ui/loader'
-
-const sliderImages = [
-    {
-        title: "Master Your Skills",
-        subtitle: "Ace Every Interview",
-        description: "Practice real-world assessments and boost your placement readiness",
-        image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=80" // Team collaboration
-    },
-    {
-        title: "AI-Powered Learning",
-        subtitle: "Smarter Preparation",
-        description: "Get personalized feedback and track your progress with advanced AI",
-        image: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&q=80" // Professional workspace
-    },
-    {
-        title: "Your Success Journey",
-        subtitle: "Starts Here",
-        description: "Join thousands of students achieving their career goals",
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80" // Students learning
-    }
-]
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader } from '@/components/ui/loader';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
+import { AnimatedBackground } from '@/components/ui/animated-background';
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/lib/i18n/useTranslation';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [userType, setUserType] = useState<'student' | 'college' | 'admin'>('student')
-    const [loading, setLoading] = useState(false)
-    const [currentSlide, setCurrentSlide] = useState(0)
-    const { login } = useAuth()
-    const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const router = useRouter();
+  const { t } = useTranslation();
 
-    // Auto-advance slider
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % sliderImages.length)
-        }, 5000)
-        return () => clearInterval(interval)
-    }, [])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
-
+    try {
+      // Try student login first (default)
+      await login(email, password, 'student');
+      router.push('/dashboard/student');
+    } catch (err: any) {
+      // If student login fails, try other user types
+      try {
+        await login(email, password, 'college');
+        router.push('/dashboard/college');
+      } catch (err2: any) {
         try {
-            await login(email, password, userType)
-        } catch (error) {
-            console.error('Login error:', error)
-        } finally {
-            setLoading(false)
+          await login(email, password, 'admin');
+          router.push('/dashboard/admin');
+        } catch (err3: any) {
+          setError(err3?.response?.data?.detail || 'Invalid credentials. Please try again.');
         }
+      }
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <div className="min-h-screen flex flex-col">
-            {/* Navbar */}
-            <Navbar />
+  return (
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 -z-10">
+        <AnimatedBackground variant="default" showGrid={true} showLines={true} />
+      </div>
 
-            {/* Main Content */}
-            <div className="flex flex-1">
-                {/* Left Section - Image Slider */}
-                <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-                    {/* Background Images */}
-                    {sliderImages.map((slide, index) => (
-                        <div
-                            key={index}
-                            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
-                                }`}
-                        >
-                            {/* Image */}
-                            <div
-                                className="absolute inset-0 bg-cover bg-center"
-                                style={{ backgroundImage: `url(${slide.image})` }}
-                            />
+      {/* Navbar */}
+      <LandingNavbar />
 
-                            {/* Gradient Overlay - darker for better text readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-                        </div>
-                    ))}
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12 pt-24 md:pt-32 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Glassmorphism Card */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-900/80 dark:to-gray-800/60 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/30 shadow-2xl" />
+            
+            <div className="relative p-8 md:p-10">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <motion.h1
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2"
+                >
+                  {t('auth.login.title')}
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-600 dark:text-gray-400 mt-2"
+                >
+                  {t('auth.login.subtitle')}
+                </motion.p>
+              </div>
 
-                    {/* Content Container - Text at Bottom */}
-                    <div className="relative z-10 flex flex-col justify-end w-full p-12 pb-16">
-                        {/* Text Content */}
-                        <div className="max-w-lg text-white transition-all duration-500 ease-in-out">
-                            <h2 className="text-4xl font-bold mb-2">
-                                {sliderImages[currentSlide].title}
-                            </h2>
-                            <h2 className="text-4xl font-bold mb-4">
-                                {sliderImages[currentSlide].subtitle}
-                            </h2>
-                            <p className="text-lg text-white/90 mb-8">
-                                {sliderImages[currentSlide].description}
-                            </p>
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400"
+                >
+                  {error}
+                </motion.div>
+              )}
 
-                            {/* Slider Indicators */}
-                            <div className="flex gap-2">
-                                {sliderImages.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentSlide(index)}
-                                        className={`h-1 rounded-full transition-all ${index === currentSlide ? 'w-8 bg-white' : 'w-4 bg-white/40'
-                                            }`}
-                                        aria-label={`Go to slide ${index + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              {/* Login Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Email Field */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-2"
+                >
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    {t('auth.login.email')}
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                    disabled={loading}
+                  />
+                </motion.div>
 
-                {/* Right Section - Login Form */}
-                <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
-                    <div className="w-full max-w-md">
-                        {/* Form Header */}
-                        <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                Welcome back
-                            </h1>
-                        </div>
+                {/* Password Field */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-2"
+                >
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t('auth.login.password')}
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                    disabled={loading}
+                  />
+                </motion.div>
 
-                        {/* Login Form */}
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* User Type Selection */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Login as
-                                </label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setUserType('student')}
-                                        className={`py-3 px-4 rounded-lg text-sm font-medium transition-all ${userType === 'student'
-                                            ? 'bg-primary-600 text-white shadow-lg'
-                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-primary-400'
-                                            }`}
-                                    >
-                                        Student
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setUserType('college')}
-                                        className={`py-3 px-4 rounded-lg text-sm font-medium transition-all ${userType === 'college'
-                                            ? 'bg-primary-600 text-white shadow-lg'
-                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-primary-400'
-                                            }`}
-                                    >
-                                        College
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setUserType('admin')}
-                                        className={`py-3 px-4 rounded-lg text-sm font-medium transition-all ${userType === 'admin'
-                                            ? 'bg-primary-600 text-white shadow-lg'
-                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-primary-400'
-                                            }`}
-                                    >
-                                        Admin
-                                    </button>
-                                </div>
-                            </div>
+                {/* Forgot Password */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex justify-end"
+                >
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    {t('auth.login.forgotPassword')}
+                  </Link>
+                </motion.div>
 
-                            {/* Email */}
-                            <div className="space-y-2">
-                                <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Email
-                                </label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="your@email.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="h-12"
-                                />
-                            </div>
+                {/* Submit Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base font-medium bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Loader size="sm" />
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        {t('auth.login.submit')}
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    )}
+                  </Button>
+                </motion.div>
 
-                            {/* Password */}
-                            <div className="space-y-2">
-                                <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Password
-                                </label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="h-12"
-                                />
-                            </div>
-
-                            {/* Submit Button */}
-                            <Button
-                                type="submit"
-                                className="w-full h-12 text-base font-medium bg-primary-600 hover:bg-primary-700"
-                                disabled={loading}
-                            >
-                                {loading ? <Loader size="sm" /> : 'Login'}
-                            </Button>
-
-                            {/* Additional Info */}
-                            {userType === 'student' && (
-                                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                                    Don't have an account?{' '}
-                                    <Link href="/auth/register" className="text-primary-600 hover:underline font-medium">
-                                        Register here
-                                    </Link>
-                                </p>
-                            )}
-
-                            {userType === 'college' && (
-                                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                                    College accounts are created by administrators
-                                </p>
-                            )}
-
-                            {userType === 'admin' && (
-                                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                                    Admin access only
-                                </p>
-                            )}
-                        </form>
-                    </div>
-                </div>
+                {/* Sign Up Link */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="text-center pt-4"
+                >
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('auth.login.noAccount')}{' '}
+                    <Link
+                      href="/auth/register"
+                      className="text-primary-600 dark:text-primary-400 hover:underline font-medium inline-flex items-center gap-1"
+                    >
+                      {t('auth.login.createAccount')}
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </p>
+                </motion.div>
+              </form>
             </div>
-        </div>
-    )
+          </div>
+        </motion.div>
+      </main>
+    </div>
+  );
 }

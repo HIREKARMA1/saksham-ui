@@ -220,7 +220,7 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
                     }
                     
                     if (!isClickOnTrigger) {
-                        setIsOpen(false)
+                    setIsOpen(false)
                     }
                 }
             }
@@ -228,7 +228,7 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
             if (isOpen) {
                 // Use setTimeout to avoid immediate closing when opening
                 setTimeout(() => {
-                    document.addEventListener('mousedown', handleClickOutside)
+                document.addEventListener('mousedown', handleClickOutside)
                 }, 0)
             }
 
