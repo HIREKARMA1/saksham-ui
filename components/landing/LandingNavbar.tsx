@@ -123,7 +123,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
             {/* Right Section - Simple Actions */}
             <div className="flex items-center gap-3">
               {/* Language Selector */}
-              <DropdownMenu>
+              {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
@@ -158,7 +158,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu> */}
 
               {/* Theme Toggle */}
               <button
