@@ -726,12 +726,12 @@ export default function AssessmentReportPage() {
                                             <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 shadow-md">
                                                 <Clock className="h-5 w-5 text-white" />
                                             </div>
-                                            Skills Assessment
-                                        </CardTitle>
+                                        Skills Assessment
+                                    </CardTitle>
                                         <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">
-                                            Multi-dimensional performance analysis
-                                        </CardDescription>
-                                    </CardHeader>
+                                        Multi-dimensional performance analysis
+                                    </CardDescription>
+                                </CardHeader>
                                 <CardContent className="relative z-10">
                                     <ResponsiveContainer width="100%" height={400}>
                                         <RadarChart data={prepareRadarData()}>
@@ -789,12 +789,12 @@ export default function AssessmentReportPage() {
                                             <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 shadow-md">
                                                 <LineChart className="h-5 w-5 text-white" />
                                             </div>
-                                            Answer Distribution
-                                        </CardTitle>
+                                        Answer Distribution
+                                    </CardTitle>
                                         <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">
-                                            Correct vs. incorrect responses
-                                        </CardDescription>
-                                    </CardHeader>
+                                        Correct vs. incorrect responses
+                                    </CardDescription>
+                                </CardHeader>
                                 <CardContent className="relative z-10">
                                     <ResponsiveContainer width="100%" height={400}>
                                         <RechartsPieChart>
@@ -815,7 +815,7 @@ export default function AssessmentReportPage() {
                                                 {prepareQuestionDistribution().map((entry, index) => (
                                                     <Cell 
                                                         key={`cell-${index}`} 
-                                                        fill={entry.name === 'Correct' ? '#10b981' : '#f97316'}
+                                                        fill={entry.name === 'Correct' ? '#10b981' : '#f97316'} 
                                                         stroke="#fff"
                                                         strokeWidth={2}
                                                     />
@@ -859,12 +859,12 @@ export default function AssessmentReportPage() {
                                         <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 shadow-md">
                                             <BarChart3 className="h-5 w-5 text-white" />
                                         </div>
-                                        Round-wise Performance Comparison
-                                    </CardTitle>
+                                    Round-wise Performance Comparison
+                                </CardTitle>
                                     <CardDescription className="text-gray-600 dark:text-gray-400 mt-2">
-                                        Detailed score breakdown by assessment round
-                                    </CardDescription>
-                                </CardHeader>
+                                    Detailed score breakdown by assessment round
+                                </CardDescription>
+                            </CardHeader>
                             <CardContent className="relative z-10">
                                 <ResponsiveContainer width="100%" height={400}>
                                     <BarChart data={prepareRadarData()} margin={{ top: 20, right: 20, bottom: 10, left: 10 }}>
@@ -933,10 +933,10 @@ export default function AssessmentReportPage() {
                                         <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-md">
                                             <LineChart className="h-5 w-5 text-white" />
                                         </div>
-                                        Performance Trend Analysis
-                                    </CardTitle>
+                                    Performance Trend Analysis
+                                </CardTitle>
                                     <CardDescription className="mt-2">Track your progress across rounds</CardDescription>
-                                </CardHeader>
+                            </CardHeader>
                             <CardContent className="relative z-10">
                                 <ResponsiveContainer width="100%" height={450}>
                                     <ComposedChart data={prepareTimeSeriesData()} margin={{ top: 20, right: 30, bottom: 10, left: 10 }}>
@@ -1044,10 +1044,10 @@ export default function AssessmentReportPage() {
                                             <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-md">
                                                 <TrendingUp className="h-5 w-5 text-white" />
                                             </div>
-                                            Performance Funnel
-                                        </CardTitle>
+                                        Performance Funnel
+                                    </CardTitle>
                                         <CardDescription className="mt-2">Rounds ranked by score</CardDescription>
-                                    </CardHeader>
+                                </CardHeader>
                                 <CardContent className="relative z-10">
                                     <ResponsiveContainer width="100%" height={480}>
                                         <FunnelChart>
@@ -1114,10 +1114,10 @@ export default function AssessmentReportPage() {
                                             <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-md">
                                                 <Activity className="h-5 w-5 text-white" />
                                             </div>
-                                            Score Distribution
-                                        </CardTitle>
+                                        Score Distribution
+                                    </CardTitle>
                                         <CardDescription className="mt-2">Cumulative performance view</CardDescription>
-                                    </CardHeader>
+                                </CardHeader>
                                 <CardContent>
                                     <ResponsiveContainer width="100%" height={350}>
                                         <AreaChart data={prepareTimeSeriesData()}>
@@ -1155,10 +1155,10 @@ export default function AssessmentReportPage() {
                                 <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
                                     <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-blue-200/30 to-blue-100/10 blur-2xl group-hover:blur-3xl transition-all duration-500" />
                                     <CardHeader className="relative z-10 pb-3">
-                                        <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">
-                                            Highest Score
-                                        </CardTitle>
-                                    </CardHeader>
+                                    <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                                        Highest Score
+                                    </CardTitle>
+                                </CardHeader>
                                 <CardContent>
                                     <div className="text-3xl font-bold text-blue-600">
                                         {Math.max(...(report?.rounds?.map((r: any) => r.percentage) || [0]))}%
@@ -1181,10 +1181,10 @@ export default function AssessmentReportPage() {
                                 <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
                                     <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-green-200/30 to-green-100/10 blur-2xl group-hover:blur-3xl transition-all duration-500" />
                                     <CardHeader className="relative z-10 pb-3">
-                                        <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">
-                                            Average Performance
-                                        </CardTitle>
-                                    </CardHeader>
+                                    <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">
+                                        Average Performance
+                                    </CardTitle>
+                                </CardHeader>
                                 <CardContent className="relative z-10">
                                     <div className="text-3xl font-bold text-green-600">
                                         {report?.overall_score?.toFixed(1)}%
@@ -1204,10 +1204,10 @@ export default function AssessmentReportPage() {
                                 <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
                                     <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-purple-200/30 to-purple-100/10 blur-2xl group-hover:blur-3xl transition-all duration-500" />
                                     <CardHeader className="relative z-10 pb-3">
-                                        <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">
-                                            Consistency Score
-                                        </CardTitle>
-                                    </CardHeader>
+                                    <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">
+                                        Consistency Score
+                                    </CardTitle>
+                                </CardHeader>
                                 <CardContent className="relative z-10">
                                     <div className="text-3xl font-bold text-purple-600">
                                         {(() => {
@@ -1239,18 +1239,18 @@ export default function AssessmentReportPage() {
                                 const gradientColors = roundConfig?.gradient || 'from-gray-400 to-gray-600'
                                 return (
                                     <motion.div
-                                        key={round.round_number}
+                                        key={round.round_number} 
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.5, delay: index * 0.1 }}
                                     >
                                         <Card 
                                             className="relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer border-0 shadow-lg group h-full flex flex-col" 
-                                            onClick={() => { 
-                                                setSelectedRound(round.round_number)
-                                                setActiveTab('round')
-                                            }}
-                                        >
+                                        onClick={() => { 
+                                            setSelectedRound(round.round_number)
+                                            setActiveTab('round')
+                                        }}
+                                    >
                                             {/* Multi-color decorative shapes */}
                                             <div className={`absolute -top-12 -right-12 w-40 h-40 rounded-full bg-gradient-to-br ${gradientColors} opacity-20 group-hover:opacity-30 blur-3xl transition-all duration-500`} />
                                             <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-gradient-to-br ${gradientColors} opacity-15 group-hover:opacity-20 blur-2xl transition-all duration-500`} />
@@ -1259,43 +1259,43 @@ export default function AssessmentReportPage() {
                                             <CardHeader className="relative z-10 pb-4">
                                                 <div className="flex items-start gap-3">
                                                     <div className={`p-3 rounded-xl bg-gradient-to-br ${roundConfig?.gradient} text-white shadow-lg flex-shrink-0`}>
-                                                        {RoundIcon && <RoundIcon className="h-5 w-5" />}
-                                                    </div>
+                                                    {RoundIcon && <RoundIcon className="h-5 w-5" />}
+                                                </div>
                                                     <div className="flex-1 min-w-0">
                                                         <CardTitle className="text-base truncate">{getRoundName(round)}</CardTitle>
                                                         <CardDescription className="text-sm">Round {round.round_number}</CardDescription>
-                                                    </div>
                                                 </div>
-                                            </CardHeader>
+                                            </div>
+                                        </CardHeader>
                                             <CardContent className="relative z-10 space-y-3 flex-1 flex flex-col">
-                                                <div className="flex justify-between items-center">
+                                            <div className="flex justify-between items-center">
                                                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Score</span>
-                                                    <span className={`text-2xl font-bold ${getScoreColor(round.percentage || 0)}`}>
-                                                        {round.percentage?.toFixed(1)}%
-                                                    </span>
-                                                </div>
-                                                <Progress value={round.percentage} className="h-2" />
+                                                <span className={`text-2xl font-bold ${getScoreColor(round.percentage || 0)}`}>
+                                                    {round.percentage?.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                            <Progress value={round.percentage} className="h-2" />
                                                 <div className="flex-1 min-h-[3rem] flex items-start">
-                                                    {round.ai_feedback && (
+                                            {round.ai_feedback && (
                                                         <div className="text-xs text-gray-600 dark:text-gray-400 p-2 bg-blue-50 dark:bg-blue-900/20 rounded w-full">
-                                                            {typeof round.ai_feedback === 'string' ? (
-                                                                <p className="line-clamp-2">{round.ai_feedback}</p>
-                                                            ) : round.ai_feedback.strengths && round.ai_feedback.strengths.length > 0 ? (
-                                                                <p className="line-clamp-2 flex items-center gap-1">
+                                                    {typeof round.ai_feedback === 'string' ? (
+                                                        <p className="line-clamp-2">{round.ai_feedback}</p>
+                                                    ) : round.ai_feedback.strengths && round.ai_feedback.strengths.length > 0 ? (
+                                                        <p className="line-clamp-2 flex items-center gap-1">
                                                                     <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
-                                                                    {round.ai_feedback.strengths[0]}
-                                                                </p>
-                                                            ) : (
-                                                                <p className="line-clamp-2">Evaluation completed</p>
-                                                            )}
-                                                        </div>
+                                                            {round.ai_feedback.strengths[0]}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="line-clamp-2">Evaluation completed</p>
                                                     )}
                                                 </div>
+                                            )}
+                                                </div>
                                                 <Button variant="outline" size="sm" className="w-full mt-auto">
-                                                    View Details →
-                                                </Button>
-                                            </CardContent>
-                                        </Card>
+                                                View Details →
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
                                     </motion.div>
                                 )
                             })}

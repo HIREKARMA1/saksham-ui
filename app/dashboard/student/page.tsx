@@ -350,9 +350,9 @@ export default function StudentDashboard() {
                                             <Zap className="h-4 w-4 text-white" />
                                     </div>
                                         <h2 className="text-2xl font-bold gradient-text">Quick Actions</h2>
-                                    </div>
+                                </div>
                                     <p className="text-gray-600 dark:text-gray-400 text-sm">Get started with your placement preparation</p>
-                        </div>
+                            </div>
 
                                 <div className="grid gap-4 relative z-10">
                                     <Link href="/dashboard/student/resume" className="group/action">
@@ -443,8 +443,8 @@ export default function StudentDashboard() {
                                                 Update Profile
                                             </span>
                                         </motion.div>
-                                    </Link>
-                                </div>
+                                </Link>
+                            </div>
                             </motion.div>
 
                             {/* Detailed Analysis - Right Side */}
@@ -465,7 +465,7 @@ export default function StudentDashboard() {
                                             <TrendingUp className="h-4 w-4 text-white" />
                                         </div>
                                         <h2 className="text-2xl font-bold gradient-text">Detailed Analysis</h2>
-                                    </div>
+                        </div>
                                     <p className="text-sm text-gray-700 dark:text-gray-300">
                                     View your latest assessment report with per-question breakdown and AI insights
                                 </p>
@@ -516,8 +516,8 @@ export default function StudentDashboard() {
                                                                         {report.readiness && (
                                                                             <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
                                                                                 Readiness: <span className="font-bold">{report.readiness}%</span>
-                                                                            </span>
-                                                                        )}
+                                        </span>
+                                    )}
                                                                     </div>
                                                                 )}
                                                             </div>
