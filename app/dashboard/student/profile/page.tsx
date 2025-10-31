@@ -10,14 +10,6 @@ import { apiClient } from '@/lib/api'
 import { Home, User, FileText, Briefcase, ClipboardList, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
-
 export default function StudentProfile() {
     const [profile, setProfile] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -55,7 +47,7 @@ export default function StudentProfile() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+        <DashboardLayout requiredUserType="student">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold">Profile</h1>

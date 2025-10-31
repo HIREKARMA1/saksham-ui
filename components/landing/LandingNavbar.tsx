@@ -57,11 +57,9 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
   return (
     <DropdownMenuProvider>
       <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-hidden',
+          'h-20', // Fixed height for navbar
           scrolled
             ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg border-b border-gray-200/50 dark:border-gray-800/50'
             : 'bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg border-b border-gray-200/30 dark:border-gray-800/30',

@@ -16,13 +16,6 @@ import {
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-]
-
 // Round display information
 const roundDisplay: Record<string, { name: string; description: string; duration: string; icon: any; color: string }> = {
     aptitude: {
@@ -156,7 +149,7 @@ export default function AssessmentPage() {
 
     if (loading) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex justify-center py-12">
                     <Loader size="lg" />
                 </div>
@@ -166,7 +159,7 @@ export default function AssessmentPage() {
 
     if (error || !assessment) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="text-center py-12">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                     <h2 className="text-2xl font-bold mb-4">Assessment Not Found</h2>
@@ -182,7 +175,7 @@ export default function AssessmentPage() {
     }
         
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-start">

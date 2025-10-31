@@ -31,13 +31,6 @@ import {
 import toast from 'react-hot-toast'
 import PlaylistTab from '@/components/assessment/report/PlaylistTab'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-]
-
 // Map by round_type for correct labeling across tech/non-tech flows
 const roundTypeInfo: Record<string, { name: string; icon: any; color: string; gradient: string }> = {
     aptitude: { name: "Aptitude Test", icon: Brain, color: "bg-blue-500", gradient: "from-blue-400 to-blue-600" },
@@ -299,7 +292,7 @@ export default function AssessmentReportPage() {
 
     if (loading) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
                     <Loader size="lg" />
                     <div className="text-center space-y-2">
@@ -314,7 +307,7 @@ export default function AssessmentReportPage() {
     // Show incomplete assessment UI
     if (error === 'incomplete') {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="space-y-6 pb-8 max-w-4xl mx-auto">
                     {/* Back Button */}
                     <Button 
@@ -431,7 +424,7 @@ export default function AssessmentReportPage() {
     // Show generic error UI  
     if (error && error !== 'incomplete') {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="space-y-6 pb-8 max-w-2xl mx-auto">
                     <Button 
                         variant="outline" 
@@ -482,7 +475,7 @@ export default function AssessmentReportPage() {
     const PerformanceIcon = performanceBadge?.icon || Trophy
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+        <DashboardLayout requiredUserType="student">
             <div className="space-y-6 pb-8">
                 {/* Enhanced Header with Animation */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 p-6 text-white shadow-2xl">
