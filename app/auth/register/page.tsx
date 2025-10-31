@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -25,9 +25,16 @@ export default function RegisterPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const { register, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push(`/dashboard/${user.user_type}`);
+    }
+  }, [user, authLoading, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -72,6 +79,11 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  // Don't render if user is logged in (will redirect)
+  if (!authLoading && user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">

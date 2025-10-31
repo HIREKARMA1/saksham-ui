@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { LandingNavbar } from './LandingNavbar';
 import { LandingSidebar } from './LandingSidebar';
+import { MobileNavbar } from './MobileNavbar';
 import { Footer } from './Footer';
 import { cn } from '@/lib/utils';
 
@@ -13,40 +14,47 @@ interface LandingLayoutProps {
 }
 
 export function LandingLayout({ children, activeFeature, onFeatureChange }: LandingLayoutProps) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
-      <LandingNavbar 
+      <LandingNavbar
         onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         isSidebarCollapsed={isSidebarCollapsed}
       />
-      
+
+      {/* Mobile Navigation Bar - Only visible on mobile */}
+      <MobileNavbar
+        activeFeature={activeFeature}
+        onFeatureChange={onFeatureChange}
+      />
+
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 flex-col">
         {/* Sidebar - Hidden on mobile */}
         <div className="hidden lg:block">
-          <LandingSidebar 
+          <LandingSidebar
             isCollapsed={isSidebarCollapsed}
             activeFeature={activeFeature}
             onFeatureChange={onFeatureChange}
           />
         </div>
-        
+
         {/* Main Content */}
-        <main 
+        <main
           className={cn(
             "flex-1 transition-all duration-300",
+            "pt-20 lg:pt-0", // Add top padding on mobile for mobile navbar (navbar h-20 + mobile nav height)
             isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
           )}
         >
           {children}
         </main>
-        
+
         {/* Footer - Only show when not viewing a feature */}
         {!activeFeature && (
-          <div 
+          <div
             className={cn(
               "transition-all duration-300",
               isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
