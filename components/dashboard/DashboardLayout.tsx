@@ -3,27 +3,22 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { Navbar } from './Navbar'
-import { Sidebar } from './Sidebar'
+import { LandingNavbar } from '@/components/landing/LandingNavbar'
+import { LandingSidebar } from '@/components/landing/LandingSidebar'
+import { MobileNavbar } from '@/components/landing/MobileNavbar'
 import { Loader } from '@/components/ui/loader'
-import { LucideIcon } from 'lucide-react'
-
-interface SidebarItem {
-    name: string
-    href: string
-    icon: LucideIcon
-}
+import { DropdownMenuProvider } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
     children: React.ReactNode
-    sidebarItems: SidebarItem[]
     requiredUserType?: 'student' | 'college' | 'admin'
 }
 
-export function DashboardLayout({ children, sidebarItems, requiredUserType }: DashboardLayoutProps) {
+export function DashboardLayout({ children, requiredUserType }: DashboardLayoutProps) {
     const { user, loading } = useAuth()
     const router = useRouter()
-    const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
 
     useEffect(() => {
         if (!loading && !user) {
@@ -47,20 +42,34 @@ export function DashboardLayout({ children, sidebarItems, requiredUserType }: Da
         return null
     }
 
-    const toggleSidebar = () => {
-        setSidebarOpen(!sidebarOpen)
-    }
-
-    const closeSidebar = () => {
-        setSidebarOpen(false)
-    }
-
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Navbar user={user} onToggleSidebar={toggleSidebar} />
-            <div className="flex">
-                <Sidebar items={sidebarItems} isOpen={sidebarOpen} onClose={closeSidebar} />
-                <main className="flex-1 p-6 overflow-y-auto h-[calc(100vh-73px)]">
+        <div className="min-h-screen flex flex-col">
+            {/* Landing Page Navbar */}
+            <LandingNavbar
+                onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                isSidebarCollapsed={isSidebarCollapsed}
+            />
+
+            {/* Mobile Navigation Bar - Only visible on mobile */}
+            <MobileNavbar />
+
+            {/* Main Content Area with Sidebar */}
+            <div className="flex flex-1 flex-col">
+                {/* Sidebar - Hidden on mobile */}
+                <div className="hidden lg:block">
+                    <LandingSidebar
+                        isCollapsed={isSidebarCollapsed}
+                    />
+                </div>
+
+                {/* Main Content */}
+                <main
+                    className={cn(
+                        "flex-1 transition-all duration-300 p-6 overflow-y-auto",
+                        "pt-20 lg:pt-24", // Add top padding on mobile for mobile navbar
+                        isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
+                    )}
+                >
                     {children}
                 </main>
             </div>

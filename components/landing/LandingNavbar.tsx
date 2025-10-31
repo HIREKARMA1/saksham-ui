@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Moon, Sun, Globe, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { User, Moon, Sun, Globe, PanelLeftClose, PanelLeft, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Language } from '@/lib/i18n';
@@ -18,6 +18,7 @@ import {
   DropdownMenuProvider,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LandingNavbarProps {
   className?: string;
@@ -30,6 +31,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
   const [scrolled, setScrolled] = useState(false);
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
+  const { user, loading: authLoading, logout } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -55,11 +57,9 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
   return (
     <DropdownMenuProvider>
       <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-hidden',
+          'h-20', // Fixed height for navbar
           scrolled
             ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg border-b border-gray-200/50 dark:border-gray-800/50'
             : 'bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg border-b border-gray-200/30 dark:border-gray-800/30',
@@ -81,7 +81,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
                   {theme === 'dark' ? (
                     <Image
                       src="/images/HKlogowhite.png"
-                      alt="Saksham AI Logo"
+                      alt="Solviq AI Logo"
                       fill
                       className="object-contain"
                       priority
@@ -89,7 +89,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
                   ) : (
                     <Image
                       src="/images/HKlogoblack.png"
-                      alt="Saksham AI Logo"
+                      alt="Solviq AI Logo"
                       fill
                       className="object-contain"
                       priority
@@ -121,7 +121,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
             {/* Right Section - Simple Actions */}
             <div className="flex items-center gap-3">
               {/* Language Selector */}
-              <DropdownMenu>
+              {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
@@ -156,7 +156,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu> */}
 
               {/* Theme Toggle */}
               <button
@@ -176,42 +176,64 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
               </button>
 
               {/* Profile Icon */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      'p-2 rounded-lg transition-colors',
-                      'bg-primary-500 hover:bg-primary-600',
-                      'text-white'
-                    )}
-                    aria-label="Profile menu"
-                  >
-                    <User className="w-5 h-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-48"
-                  sideOffset={8}
-                >
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/login" className="cursor-pointer">
-                      {t('common.login')}
+              {!authLoading && (
+                <>
+                  {!user ? (
+                    // Not logged in - navigate to login on click
+                    <Link href="/auth/login">
+                      <button
+                        className={cn(
+                          'p-2 rounded-lg transition-colors',
+                          'bg-primary-500 hover:bg-primary-600',
+                          'text-white'
+                        )}
+                        aria-label="Login"
+                      >
+                        <User className="w-5 h-5" />
+                      </button>
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/register" className="cursor-pointer">
-                      {t('common.signUp')}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/student" className="cursor-pointer">
-                      {t('common.dashboard')}
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  ) : (
+                    // Logged in - show dropdown with logout and profile
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={cn(
+                            'p-2 rounded-lg transition-colors',
+                            'bg-primary-500 hover:bg-primary-600',
+                            'text-white'
+                          )}
+                          aria-label="Profile menu"
+                        >
+                          <User className="w-5 h-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48"
+                        sideOffset={8}
+                      >
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/dashboard/${user.user_type}/profile`}
+                            className="cursor-pointer flex items-center gap-2"
+                          >
+                            <User className="w-4 h-4" />
+                            {t('common.profile') || 'Profile'}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={logout}
+                          className="cursor-pointer flex items-center gap-2 text-red-600 dark:text-red-400"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          {t('common.logout') || 'Logout'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

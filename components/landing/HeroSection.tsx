@@ -7,8 +7,12 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Button } from '@/components/ui/button';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 export function HeroSection() {
+  const router = useRouter();
+  const { user } = useAuth();
   const { t } = useTranslation();
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -107,23 +111,30 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/auth/register">
-              <Button
-                size="lg"
-                className="group relative overflow-hidden bg-primary-500 hover:bg-primary-600 text-white text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  {t('hero.cta.primary')}
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-primary-600 to-secondary-600"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="group relative overflow-hidden bg-primary-500 hover:bg-primary-600 text-white text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all"
+              onClick={() => {
+                if (user) {
+                  // If logged in, navigate to assessment page
+                  router.push(`/dashboard/${user.user_type}/assessment`);
+                } else {
+                  // If not logged in, navigate to login
+                  router.push('/auth/login');
+                }
+              }}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {t('hero.cta.primary')}
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </span>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-primary-600 to-secondary-600"
+                initial={{ x: '-100%' }}
+                whileHover={{ x: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            </Button>
 
             <Button
               size="lg"
@@ -138,25 +149,19 @@ export function HeroSection() {
             </Button>
           </motion.div>
 
-          {/* Trust Indicators */}
+          {/* Launch Message */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.8 }}
             className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800"
           >
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Trusted by students from top universities
+            <p className="text-base text-gray-600 dark:text-gray-300 mb-2 font-medium">
+              🚀 New Platform Launch
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-8 opacity-60">
-              {/* Placeholder for university logos */}
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="w-24 h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
-                />
-              ))}
-            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Join us as we revolutionize interview preparation with AI-powered insights and comprehensive practice tools. Start your journey today!
+            </p>
           </motion.div>
         </div>
       </div>

@@ -22,8 +22,8 @@ export function FAQ() {
     {
       id: '1',
       category: 'general',
-      question: 'What is Saksham AI?',
-      answer: 'Saksham AI is an advanced interview preparation platform powered by artificial intelligence. It helps job seekers prepare for interviews through mock interviews, AI-powered feedback, resume building, and automated job applications.',
+      question: 'What is Solviq AI?',
+      answer: 'Solviq AI is an advanced AI Employability Engine powered by artificial intelligence. It helps job seekers prepare for interviews through mock interviews, AI-powered feedback, resume building, and automated job applications. Solviq doesn\'t just test you — it reads you.',
     },
     {
       id: '2',
