@@ -201,9 +201,9 @@ const translations: Translations = {
     'hero.cta.secondary': 'View Demo',
     
     // Statistics
-    'stats.jobsSecured': '10K+ JOBS SECURED',
-    'stats.usersActive': '150K+ JOB SEEKERS USING SOLVIQ AI',
-    'stats.rating': '4.2⭐ RATED BY USERS',
+    'stats.jobsSecured': 'START YOUR JOURNEY',
+    'stats.usersActive': 'AI-POWERED INTERVIEW PREP',
+    'stats.rating': 'TRUSTED BY STUDENTS',
     
     // Features
     'features.title': 'Powerful Features to Help You Succeed',
@@ -380,9 +380,9 @@ const translations: Translations = {
     'hero.cta.secondary': 'डेमो देखें',
     
     // Statistics
-    'stats.jobsSecured': '10K+ नौकरियां सुरक्षित',
-    'stats.usersActive': '150K+ जॉब सीकर्स Solviq AI का उपयोग कर रहे हैं',
-    'stats.rating': '4.2⭐ उपयोगकर्ताओं द्वारा रेटेड',
+    'stats.jobsSecured': 'अपनी यात्रा शुरू करें',
+    'stats.usersActive': 'AI-संचालित इंटरव्यू तैयारी',
+    'stats.rating': 'छात्रों द्वारा विश्वसनीय',
     
     // Features
     'features.title': 'सफलता के लिए शक्तिशाली विशेषताएं',
@@ -559,9 +559,9 @@ const translations: Translations = {
     'hero.cta.secondary': 'ଡେମୋ ଦେଖନ୍ତୁ',
     
     // Statistics
-    'stats.jobsSecured': '10K+ ଚାକିରି ସୁରକ୍ଷିତ',
-    'stats.usersActive': '150K+ ଚାକିରି ଖୋଜୁଥିବା Solviq AI ବ୍ୟବହାର କରୁଛନ୍ତି',
-    'stats.rating': '4.2⭐ ଉପଭୋକ୍ତାଙ୍କ ଦ୍ୱାରା ମୂଲ୍ୟାୟନ',
+    'stats.jobsSecured': 'ଆପଣଙ୍କର ଯାତ୍ରା ଆରମ୍ଭ କରନ୍ତୁ',
+    'stats.usersActive': 'AI-ଚାଳିତ ସାକ୍ଷାତକାର ପ୍ରସ୍ତୁତି',
+    'stats.rating': 'ଛାତ୍ରମାନଙ୍କ ଦ୍ୱାରା ବିଶ୍ୱସ୍ତ',
     
     // Features
     'features.title': 'ସଫଳତା ପାଇଁ ଶକ୍ତିଶାଳୀ ବୈଶିଷ୍ଟ୍ୟ',

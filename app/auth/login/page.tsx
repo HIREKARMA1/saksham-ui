@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -18,9 +18,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push(`/dashboard/${user.user_type}`);
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +55,11 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Don't render if user is logged in (will redirect)
+  if (!authLoading && user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
