@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -71,6 +72,24 @@ export default function AssessmentHistoryPage() {
             : 0
     }
 
+    // Calculate Assessment Overview style stats (aggregate across all assessments)
+    const assessmentStats = {
+        overallScore: history.assessments.length > 0
+            ? Math.round(history.assessments.reduce((sum: number, a: any) => sum + (a.overall_score || 0), 0) / history.assessments.length)
+            : 0,
+        readinessIndex: history.assessments.length > 0
+            ? Math.round(history.assessments.reduce((sum: number, a: any) => sum + (a.readiness_index || 0), 0) / history.assessments.length)
+            : 0,
+        completedRounds: history.assessments.reduce((total: number, a: any) => {
+            return total + (a.rounds?.filter((r: any) => r.status === 'COMPLETED' || r.percentage != null).length || 0)
+        }, 0),
+        totalDuration: history.assessments.reduce((total: number, a: any) => {
+            // Estimate duration: assume 30 min per completed round
+            const completedRounds = a.rounds?.filter((r: any) => r.status === 'COMPLETED' || r.percentage != null).length || 0
+            return total + (completedRounds * 30)
+        }, 0)
+    }
+
     // Filter assessments
     const filteredAssessments = history.assessments.filter((a: any) => {
         if (filter === 'all') return true
@@ -82,103 +101,106 @@ export default function AssessmentHistoryPage() {
     return (
         <DashboardLayout requiredUserType="student">
             <div className="space-y-8">
-                {/* Hero Header with Gradient */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 p-8 text-white">
-                    <div className="absolute inset-0 bg-grid-white/10" />
+                {/* Hero Header with Gradient (aligned with landing/job pages) */}
+                <div className="relative overflow-hidden rounded-2xl p-8 text-gray-900 dark:text-white border bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+                    {/* decorative corners */}
+                    <div className="pointer-events-none absolute -top-12 -right-12 w-56 h-56 rotate-45 bg-gradient-to-br from-primary-100/40 to-secondary-100/30 dark:from-primary-900/30 dark:to-secondary-900/20" />
+                    <div className="pointer-events-none absolute -bottom-14 -left-14 w-64 h-64 rounded-full bg-gradient-to-tr from-secondary-100/30 to-accent-100/20 dark:from-secondary-900/20 dark:to-accent-900/10" />
                     <div className="relative z-10">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                    <div className="p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400">
                                         <Sparkles className="h-6 w-6" />
                                     </div>
-                                    <h1 className="text-4xl font-bold">Assessment Journey</h1>
+                                    <h1 className="text-4xl font-bold gradient-text">Assessment Journey</h1>
                                 </div>
-                                <p className="text-lg text-white/90 max-w-2xl">
+                                <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
                                     Track your progress, analyze performance, and unlock your potential with AI-powered insights
                                 </p>
                             </div>
-                            <Link href="/dashboard/student/assessment">
-                                <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90">
-                                    <Zap className="h-5 w-5 mr-2" />
-                                    New Assessment
-                                </Button>
-                            </Link>
+
                         </div>
                     </div>
                 </div>
 
-                {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Assessments</p>
-                                    <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+                {/* Assessment Stats - Matching Assessment Overview Style */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Overall Score */}
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                            <CardContent className="p-6 relative z-10">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <BarChart3 className="w-6 h-6 text-blue-500" />
+                                        <div>
+                                            <p className="text-sm font-medium">Overall Score</p>
+                                            <p className="text-3xl font-bold">{assessmentStats.overallScore}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-                                    <BarChart3 className="h-6 w-6 text-blue-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-blue-200/50 to-blue-100/20 dark:from-blue-900/30 dark:to-blue-800/10" />
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-blue-50 to-blue-100/70 dark:from-blue-900/20 dark:to-blue-900/10" />
+                        </Card>
+                    </motion.div>
 
-                    <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
-                                    <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+                    {/* Readiness Index */}
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                            <CardContent className="p-6 relative z-10">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <Award className="w-6 h-6 text-green-500" />
+                                        <div>
+                                            <p className="text-sm font-medium">Readiness Index</p>
+                                            <p className="text-3xl font-bold">{assessmentStats.readinessIndex}%</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-xl">
-                                    <CheckCircle className="h-6 w-6 text-green-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-green-200/50 to-green-100/20 dark:from-green-900/30 dark:to-green-800/10" />
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-green-50 to-green-100/70 dark:from-green-900/20 dark:to-green-900/10" />
+                        </Card>
+                    </motion.div>
 
-                    <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
-                                    <p className="text-3xl font-bold text-yellow-600">{stats.inProgress}</p>
+                    {/* Completed Rounds */}
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                            <CardContent className="p-6 relative z-10">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <CheckCircle className="w-6 h-6 text-purple-500" />
+                                        <div>
+                                            <p className="text-sm font-medium">Completed Rounds</p>
+                                            <p className="text-3xl font-bold">{assessmentStats.completedRounds}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-xl">
-                                    <Clock className="h-6 w-6 text-yellow-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-purple-200/50 to-purple-100/20 dark:from-purple-900/30 dark:to-purple-800/10" />
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-purple-50 to-purple-100/70 dark:from-purple-900/20 dark:to-purple-900/10" />
+                        </Card>
+                    </motion.div>
 
-                    <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Average Score</p>
-                                    <p className="text-3xl font-bold text-purple-600">{stats.avgScore}%</p>
+                    {/* Total Duration */}
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                            <CardContent className="p-6 relative z-10">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <Clock className="w-6 h-6 text-orange-500" />
+                                        <div>
+                                            <p className="text-sm font-medium">Total Duration</p>
+                                            <p className="text-3xl font-bold">{assessmentStats.totalDuration} min</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-xl">
-                                    <TrendingUp className="h-6 w-6 text-purple-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Best Score</p>
-                                    <p className="text-3xl font-bold text-orange-600">{stats.bestScore}%</p>
-                                </div>
-                                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl">
-                                    <Trophy className="h-6 w-6 text-orange-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-orange-200/50 to-orange-100/20 dark:from-orange-900/30 dark:to-orange-800/10" />
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-orange-50 to-orange-100/70 dark:from-orange-900/20 dark:to-orange-900/10" />
+                        </Card>
+                    </motion.div>
                 </div>
 
                 {/* Filters */}
@@ -248,10 +270,12 @@ export default function AssessmentHistoryPage() {
                             return (
                                 <Card 
                                     key={assessment.assessment_id} 
-                                    className="group hover:shadow-2xl transition-all duration-300 border-2 hover:border-purple-300 dark:hover:border-purple-700 relative overflow-hidden"
+                                    className="group card-hover hover:shadow-2xl transition-all duration-300 border-2 hover:border-primary-300 dark:hover:border-primary-700 relative overflow-hidden"
                                 >
-                                    {/* Gradient overlay on hover */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    {/* Decorative backgrounds inspired by landing cards */}
+                                    <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rotate-45 bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20" />
+                                    <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-gradient-to-tr from-secondary-100 to-accent-100 dark:from-secondary-900/20 dark:to-accent-900/10 opacity-70" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-secondary-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     
                                     <CardHeader className="pb-4 relative z-10">
                                         <div className="flex items-start justify-between">
@@ -285,44 +309,56 @@ export default function AssessmentHistoryPage() {
                                     </CardHeader>
 
                                     <CardContent className="space-y-4 relative z-10">
-                                        {/* Score Cards */}
+                                        {/* Score Cards - Matching Assessment Overview Style */}
                                         <div className="grid grid-cols-3 gap-3">
-                                            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                                                    <p className="text-xs font-medium text-blue-600">Overall</p>
+                                            {/* Overall Score */}
+                                            <div className="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/70 dark:from-blue-900/20 dark:to-blue-900/10 border border-blue-200 dark:border-blue-800">
+                                                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-br from-blue-200/50 to-blue-100/20 dark:from-blue-900/30 dark:to-blue-800/10" />
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <BarChart3 className="h-4 w-4 text-blue-500" />
+                                                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Overall</p>
+                                                    </div>
+                                                    <p className={`text-2xl font-bold ${getScoreColor(assessment.overall_score || 0)}`}>
+                                                        {(assessment.overall_score || 0).toFixed(1)}%
+                                                    </p>
                                                 </div>
-                                                <p className={`text-2xl font-bold ${getScoreColor(assessment.overall_score || 0)}`}>
-                                                    {(assessment.overall_score || 0).toFixed(1)}%
-                                                </p>
                                             </div>
 
-                                            <div className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Award className="h-4 w-4 text-green-600" />
-                                                    <p className="text-xs font-medium text-green-600">Readiness</p>
+                                            {/* Readiness Index */}
+                                            <div className="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100/70 dark:from-green-900/20 dark:to-green-900/10 border border-green-200 dark:border-green-800">
+                                                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-br from-green-200/50 to-green-100/20 dark:from-green-900/30 dark:to-green-800/10" />
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Award className="h-4 w-4 text-green-500" />
+                                                        <p className="text-xs font-medium text-green-600 dark:text-green-400">Readiness</p>
+                                                    </div>
+                                                    <p className={`text-2xl font-bold ${getScoreColor(assessment.readiness_index || 0)}`}>
+                                                        {(assessment.readiness_index || 0).toFixed(1)}%
+                                                    </p>
                                                 </div>
-                                                <p className={`text-2xl font-bold ${getScoreColor(assessment.readiness_index || 0)}`}>
-                                                    {(assessment.readiness_index || 0).toFixed(1)}%
-                                                </p>
                                             </div>
 
-                                            <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Target className="h-4 w-4 text-purple-600" />
-                                                    <p className="text-xs font-medium text-purple-600">Rounds</p>
+                                            {/* Rounds */}
+                                            <div className="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/70 dark:from-purple-900/20 dark:to-purple-900/10 border border-purple-200 dark:border-purple-800">
+                                                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-br from-purple-200/50 to-purple-100/20 dark:from-purple-900/30 dark:to-purple-800/10" />
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <CheckCircle className="h-4 w-4 text-purple-500" />
+                                                        <p className="text-xs font-medium text-purple-600 dark:text-purple-400">Rounds</p>
+                                                    </div>
+                                                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                                                        {assessment.rounds?.filter((r: any) => r.percentage != null).length || 0}/5
+                                                    </p>
                                                 </div>
-                                                <p className="text-2xl font-bold text-purple-600">
-                                                    {assessment.rounds?.filter((r: any) => r.percentage != null).length || 0}/5
-                                                </p>
                                             </div>
                                         </div>
 
-                                        {/* Progress Bar */}
-                                        <div>
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-sm font-medium">Progress</span>
-                                                <span className="text-sm text-gray-500">
+                                        {/* Assessment Journey Section */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Assessment Journey</span>
+                                                <span className="text-sm text-gray-500 dark:text-gray-400">
                                                     {((assessment.rounds?.filter((r: any) => r.percentage != null).length || 0) / 5 * 100).toFixed(0)}%
                                                 </span>
                                             </div>
@@ -330,25 +366,33 @@ export default function AssessmentHistoryPage() {
                                                 value={(assessment.rounds?.filter((r: any) => r.percentage != null).length || 0) / 5 * 100}
                                                 className="h-2"
                                             />
+                                            
+                                            {/* Round Progress Tags - Using theme colors based on performance */}
+                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                {(assessment.rounds || []).map((round: any) => {
+                                                    const roundPercentage = round.percentage || 0
+                                                    let badgeColor = 'bg-gray-500'
+                                                    if (roundPercentage >= 80) badgeColor = 'bg-green-500'
+                                                    else if (roundPercentage >= 60) badgeColor = 'bg-blue-500'
+                                                    else if (roundPercentage >= 40) badgeColor = 'bg-yellow-500'
+                                                    else if (roundPercentage > 0) badgeColor = 'bg-orange-500'
+                                                    
+                                                    return (
+                                                        <Badge 
+                                                            key={round.round_number} 
+                                                            className={`text-xs font-medium text-white ${badgeColor} border-0`}
+                                                        >
+                                                            R{round.round_number}: {roundPercentage.toFixed(0)}%
+                                                        </Badge>
+                                                    )
+                                                })}
+                                            </div>
                                         </div>
 
-                                        {/* Round Badges */}
-                                        <div className="flex flex-wrap gap-2">
-                                            {(assessment.rounds || []).map((round: any) => (
-                                                <Badge 
-                                                    key={round.round_number} 
-                                                    variant={getBadgeVariant(round.percentage || 0)}
-                                                    className="text-xs font-medium"
-                                                >
-                                                    R{round.round_number}: {(round.percentage || 0).toFixed(0)}%
-                                                </Badge>
-                                            ))}
-                                        </div>
-
-                                        {/* Action Buttons */}
+                                        {/* Action Buttons - Matching Theme */}
                                         <div className="flex gap-2 pt-2">
                                             <Button 
-                                                className="flex-1 group/btn"
+                                                className="flex-1 group/btn bg-primary-600 hover:bg-primary-700 text-white"
                                                 onClick={() => router.push(`/dashboard/student/assessment/report?id=${assessment.assessment_id}`)}
                                             >
                                                 View Report
@@ -356,6 +400,7 @@ export default function AssessmentHistoryPage() {
                                             </Button>
                                             <Button 
                                                 variant="outline"
+                                                className="border-primary-300 text-primary-700 hover:bg-primary-50 dark:border-primary-700 dark:text-primary-400 dark:hover:bg-primary-900/20"
                                                 onClick={() => router.push(`/dashboard/student/assessment?id=${assessment.assessment_id}`)}
                                             >
                                                 {assessment.status === 'completed' ? 'Review' : 'Continue'}

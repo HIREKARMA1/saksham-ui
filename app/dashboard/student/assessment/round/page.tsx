@@ -84,6 +84,8 @@ export default function AssessmentRoundPage() {
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [timeLeft, setTimeLeft] = useState<number | null>(null)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+    const autoFullscreenAttemptedRef = useRef(false)
     
     // Live Transcription States
     const [isLiveTranscribing, setIsLiveTranscribing] = useState(false)
@@ -228,6 +230,68 @@ export default function AssessmentRoundPage() {
             }
         }
     }, [isLiveTranscribing])
+
+    // Track fullscreen changes
+    useEffect(() => {
+        if (typeof document === 'undefined') return
+        const handler = () => {
+            const fs = Boolean(document.fullscreenElement || (document as any).webkitFullscreenElement)
+            setIsFullscreen(fs)
+        }
+        document.addEventListener('fullscreenchange', handler)
+        document.addEventListener('webkitfullscreenchange', handler as any)
+        return () => {
+            document.removeEventListener('fullscreenchange', handler)
+            document.removeEventListener('webkitfullscreenchange', handler as any)
+        }
+    }, [])
+
+    const toggleFullscreen = async () => {
+        try {
+            if (!isFullscreen) {
+                const elem: any = document.documentElement
+                if (elem.requestFullscreen) await elem.requestFullscreen()
+                else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen()
+            } else {
+                if (document.exitFullscreen) await document.exitFullscreen()
+                else if ((document as any).webkitExitFullscreen) await (document as any).webkitExitFullscreen()
+            }
+        } catch (e) {
+            console.error('Fullscreen toggle failed', e)
+        }
+    }
+
+    // Try to enter fullscreen automatically when page opens after Start click
+    useEffect(() => {
+        if (autoFullscreenAttemptedRef.current) return
+        autoFullscreenAttemptedRef.current = true
+
+        const requestFs = async () => {
+            try {
+                const elem: any = document.documentElement
+                if (!document.fullscreenElement && (elem.requestFullscreen || elem.webkitRequestFullscreen)) {
+                    if (elem.requestFullscreen) await elem.requestFullscreen()
+                    else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen()
+                }
+            } catch (e) {
+                // Many browsers require a user gesture; fall back to first interaction
+            }
+        }
+
+        // Attempt quickly after navigation (still counts as gesture in many browsers)
+        const t = setTimeout(requestFs, 100)
+
+        // If blocked, request on first user interaction
+        const once = async () => {
+            document.removeEventListener('pointerdown', once)
+            document.removeEventListener('keydown', once)
+            await requestFs()
+        }
+        document.addEventListener('pointerdown', once, { once: true })
+        document.addEventListener('keydown', once, { once: true })
+
+        return () => clearTimeout(t)
+    }, [])
 
     // Cleanup effect
     useEffect(() => {
@@ -552,6 +616,20 @@ export default function AssessmentRoundPage() {
         return `${mins}:${secs.toString().padStart(2, '0')}`
     }
 
+    const splitTime = (seconds: number | null) => {
+        if (seconds === null) {
+            return { hours: '--', minutes: '--', seconds: '--' }
+        }
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+        const secs = seconds % 60
+        return {
+            hours: hours.toString().padStart(2, '0'),
+            minutes: minutes.toString().padStart(2, '0'),
+            seconds: secs.toString().padStart(2, '0')
+        }
+    }
+
     function getQuestionStatus(index: number) {
         if (!roundData?.questions[index]) return 'notVisited'
         
@@ -676,15 +754,22 @@ export default function AssessmentRoundPage() {
                         </div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto p-6">
-                        <CodingRound
-                            assessmentId={assessmentId!}
-                            roundData={roundData}
-                            onSubmitted={() => {
-                                router.push(`/dashboard/student/assessment?id=${assessmentId}`)
-                            }}
-                        />
+                {/* Full-height Coding Workspace */}
+                <div className="flex-1 overflow-hidden">
+                    <div className="h-full w-full px-3">
+                        <div className="h-full rounded-xl border border-gray-200 bg-white/90 backdrop-blur-sm shadow-sm p-0 md:p-0">
+                            <div className="h-full">
+                                <CodingRound
+                                    assessmentId={assessmentId!}
+                                    roundData={roundData}
+                                    onSubmitted={() => {
+                                        router.push(`/dashboard/student/assessment?id=${assessmentId}`)
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </div>
+                </div>
                 </div>
             </DashboardLayout>
         )
@@ -708,6 +793,15 @@ export default function AssessmentRoundPage() {
 
     // ========== CHAT INTERFACE FOR INTERVIEW ROUNDS ==========
     if (isVoiceRound) {
+        const isHR = roundType === 'hr_interview'
+        const headerTitle = isHR ? 'HR Interview' : 'Technical Interview'
+        const headerGradient = isHR ? 'from-orange-500 to-pink-600' : 'from-blue-600 to-purple-600'
+        const pageBg = isHR ? 'from-orange-50 via-white to-pink-50' : 'from-blue-50 via-white to-purple-50'
+        const primaryGrad = isHR ? 'from-orange-500 to-pink-600' : 'from-blue-600 to-purple-600'
+        const aiBadgeGrad = isHR ? 'from-orange-500 to-pink-500' : 'from-blue-500 to-purple-500'
+        const cardBorder = isHR ? 'border-pink-100' : 'border-blue-100'
+        const liveBorder = isHR ? 'border-orange-300' : 'border-blue-300'
+        const liveText = isHR ? 'text-orange-600' : 'text-blue-600'
         return (
             <DashboardLayout requiredUserType="student">
                 <div className="h-[calc(100vh-64px)] flex flex-col bg-gradient-to-br from-blue-50 to-purple-50">
@@ -735,130 +829,106 @@ export default function AssessmentRoundPage() {
                         </div>
                     </div>
 
-                    {/* Chat Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                        <div className="max-w-4xl mx-auto space-y-6">
-                            {/* Current Question */}
-                            {currentQ && (
-                                <div className="bg-white rounded-2xl shadow-md p-6 border-l-4 border-blue-500">
+                {/* Chat Area */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        {currentQ && (
+                            <div className={`bg-white rounded-2xl shadow-md p-6 border ${cardBorder}`}>
+                                <div className="flex items-start gap-4">
+                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${aiBadgeGrad} flex items-center justify-center text-white font-bold`}>AI</div>
+                                    <div className="flex-1">
+                                        <p className="text-sm text-gray-500 mb-2">Interviewer</p>
+                                        <p className="text-gray-800 text-lg leading-relaxed">{currentQ.question_text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {responses[currentQ?.id]?.response_text && (
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-md p-6 border border-emerald-100">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">You</div>
+                                    <div className="flex-1">
+                                        <p className="text-sm text-gray-500 mb-2">Your Answer</p>
+                                        <p className="text-gray-800 leading-relaxed">{responses[currentQ.id].response_text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {isLiveTranscribing && (liveTranscript || interimTranscript) && (
+                            <div className="bg-white rounded-2xl shadow-md p-6 border-2 border-dashed" style={{ borderColor: 'transparent' }}>
+                                <div className={`border-2 ${liveBorder} rounded-xl p-4 bg-opacity-50 bg-blue-50`}>
                                     <div className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                                            AI
-                                        </div>
+                                        <Mic className={`h-6 w-6 ${liveText} animate-pulse`} />
                                         <div className="flex-1">
-                                            <p className="text-sm text-gray-500 mb-2">Interviewer</p>
-                                            <p className="text-gray-800 text-lg leading-relaxed">
-                                                {currentQ.question_text}
-                                            </p>
+                                            <p className={`text-sm ${liveText} font-semibold mb-2`}>Speaking... (Live)</p>
+                                        <p className="text-gray-800">
+                                            {liveTranscript}
+                                            {interimTranscript && (
+                                                <span className="text-gray-500 italic"> {interimTranscript}</span>
+                                            )}
+                                        </p>
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {/* Student's Response */}
-                            {responses[currentQ?.id]?.response_text && (
-                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-md p-6 border-l-4 border-green-500">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
-                                            You
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-gray-500 mb-2">Your Answer</p>
-                                            <p className="text-gray-800 leading-relaxed">
-                                                {responses[currentQ.id].response_text}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Live Transcription */}
-                            {isLiveTranscribing && (liveTranscript || interimTranscript) && (
-                                <div className="bg-blue-50 rounded-2xl shadow-md p-6 border-2 border-blue-300 border-dashed">
-                                    <div className="flex items-start gap-4">
-                                        <Mic className="h-6 w-6 text-blue-600 animate-pulse" />
-                                        <div className="flex-1">
-                                            <p className="text-sm text-blue-600 font-semibold mb-2">Speaking... (Live)</p>
-                                            <p className="text-gray-800">
-                                                {liveTranscript}
-                                                {interimTranscript && (
-                                                    <span className="text-gray-500 italic"> {interimTranscript}</span>
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div ref={chatEndRef} />
-                        </div>
+                        <div ref={chatEndRef} />
                     </div>
+                </div>
 
-                    {/* Bottom Controls */}
-                    <div className="bg-white border-t shadow-lg p-4">
-                        <div className="max-w-4xl mx-auto space-y-4">
-                            {/* Recording Controls */}
-                            <div className="flex gap-3">
-                                {!isLiveTranscribing ? (
-                                    <button
-                                        onClick={startLiveTranscription}
-                                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all flex items-center justify-center gap-3"
-                                    >
-                                        <Mic className="h-6 w-6" />
-                                        <span>Start Speaking</span>
-                                    </button>
+                {/* Bottom Controls */}
+                <div className="bg-white/90 backdrop-blur border-t shadow-lg p-4">
+                    <div className="max-w-4xl mx-auto space-y-4">
+                        <div className="flex gap-3">
+                            {!isLiveTranscribing ? (
+                                <button onClick={startLiveTranscription} className={`flex-1 bg-gradient-to-r ${primaryGrad} hover:opacity-95 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all flex items-center justify-center gap-3`}>
+                                    <Mic className="h-6 w-6" />
+                                    <span>Start Speaking</span>
+                                </button>
+                            ) : (
+                                <button onClick={stopLiveTranscription} className="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all animate-pulse flex items-center justify-center gap-3">
+                                    <Square className="h-6 w-6" />
+                                    <span>Stop & Save Answer</span>
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    if (currentQuestion < roundData.questions.length - 1) {
+                                        navigateToQuestion(currentQuestion + 1)
+                                    }
+                                }}
+                                disabled={currentQuestion >= roundData.questions.length - 1}
+                                className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 text-gray-800 px-6 py-3 rounded-xl font-medium transition-all"
+                            >
+                                Next Question →
+                            </button>
+
+                            <button onClick={handleSubmitWithConfirmation} disabled={submitting} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg">
+                                {submitting ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Loader size="sm" />
+                                        <span>Submitting...</span>
+                                    </div>
                                 ) : (
-                                    <button
-                                        onClick={stopLiveTranscription}
-                                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all animate-pulse flex items-center justify-center gap-3"
-                                    >
-                                        <Square className="h-6 w-6" />
-                                        <span>Stop & Save Answer</span>
-                                    </button>
+                                    <span>✓ Submit Interview</span>
                                 )}
-                            </div>
+                            </button>
+                        </div>
 
-                            {/* Navigation Buttons */}
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        if (currentQuestion < roundData.questions.length - 1) {
-                                            navigateToQuestion(currentQuestion + 1)
-                                        }
-                                    }}
-                                    disabled={currentQuestion >= roundData.questions.length - 1}
-                                    className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 text-gray-800 px-6 py-3 rounded-xl font-medium transition-all"
-                                >
-                                    Next Question →
-                                </button>
-
-                                <button
-                                    onClick={handleSubmitWithConfirmation}
-                                    disabled={submitting}
-                                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg"
-                                >
-                                    {submitting ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Loader size="sm" />
-                                            <span>Submitting...</span>
-                                        </div>
-                                    ) : (
-                                        <span>✓ Submit Interview</span>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Progress Indicator */}
-                            <div className="flex items-center justify-between text-sm text-gray-600">
-                                <span>Progress: {currentQuestion + 1} / {roundData?.questions?.length || 0}</span>
-                                {counts.notVisited + counts.notAnswered + counts.marked > 0 && (
-                                    <span className="text-orange-600">
-                                        ⚠️ {counts.notVisited + counts.notAnswered + counts.marked} unanswered
-                                    </span>
-                                )}
-                            </div>
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                            <span>Progress: {currentQuestion + 1} / {roundData?.questions?.length || 0}</span>
+                            {counts.notVisited + counts.notAnswered + counts.marked > 0 && (
+                                <span className="text-orange-600">⚠️ {counts.notVisited + counts.notAnswered + counts.marked} unanswered</span>
+                            )}
                         </div>
                     </div>
+                </div>
                 </div>
             </DashboardLayout>
         )
@@ -867,10 +937,10 @@ export default function AssessmentRoundPage() {
 
     // ========== UPDATED MCQ INTERFACE WITH NEW QUESTION TYPES ==========
     return (
-        <div className="min-h-screen bg-gray-100 select-none">
+        <div className="min-h-screen bg-gray-100 select-none flex flex-col">
             {/* Header */}
-            <div className="bg-green-600 text-white p-4">
-                <div className="flex justify-between items-center max-w-7xl mx-auto">
+            <div className="bg-blue-600 text-white p-4">
+                <div className="flex justify-between items-center w-full px-6">
                     <h1 className="text-xl font-semibold">
                         {/* Use the backend type for correct naming in non-tech vs tech flows */}
                         {(() => {
@@ -887,35 +957,23 @@ export default function AssessmentRoundPage() {
                             return <>Round {roundNumber}: {title}</>
                         })()}
                     </h1>
-                    <div className="flex items-center space-x-6">
-                        <div className="text-right">
-                            <div className="text-sm">
-                                Time Left: {formatTime(timeLeft)}
-                                {timeLeft !== null && timeLeft <= 60 && timeLeft > 0 && (
-                                    <span className="ml-2 text-yellow-300 font-bold animate-pulse">
-                                        ⚠️ Last minute!
-                                    </span>
-                                )}
-                            </div>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={toggleFullscreen}
+                            className="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded text-sm"
+                            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                        >
+                            {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto flex">
-                {/* Left Sidebar */}
-                <div className="w-48 bg-white border-r min-h-screen">
-                    <div className="p-4">
-                        <h3 className="font-semibold text-gray-800 mb-2">Sections</h3>
-                        <div className="bg-green-600 text-white px-3 py-1 text-sm rounded">
-                            {roundData.round_type?.replace('_', ' ').toUpperCase() || 'Assessment'}
-                        </div>
-                    </div>
-                </div>
+            <div className="flex-1 w-full flex">
 
                 {/* Main Content - Question Display with All Types */}
-                <div className="flex-1 bg-white p-6">
-                    <div className="max-w-4xl">
+                <div className="flex-1 bg-white p-6 flex flex-col">
+                    <div className="max-w-none">
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold mb-4">
                                 Question No {currentQuestion + 1}
@@ -1143,45 +1201,44 @@ export default function AssessmentRoundPage() {
                             </div>
                         </div>
 
-                        {/* Navigation Buttons */}
-                        <div className="flex justify-between items-center">
-                            <button
-                                onClick={handleMarkForReview}
-                                className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded border"
-                            >
-                                Mark for Review & Next
-                            </button>
-
-                            <button
-                                onClick={handleClearResponse}
-                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded border"
-                            >
-                                Clear Response
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    if (currentQuestion < roundData.questions.length - 1) {
-                                        navigateToQuestion(currentQuestion + 1)
-                                    }
-                                }}
-                                disabled={currentQuestion >= roundData.questions.length - 1}
-                                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded"
-                            >
-                                Save & Next
-                            </button>
-                        </div>
+                        {/* Spacer before sticky bar */}
+                        <div className="mt-10" />
                     </div>
                 </div>
 
                 {/* Right Sidebar - Question Palette (Keep existing code with optional icon additions) */}
                 <div className="w-80 bg-white border-l p-4">
                     <div className="mb-6">
-                        <div className="flex items-center space-x-2 mb-2">
+                        <div className="mt-1">
+                            <div className="text-xs font-semibold text-gray-600 text-center mb-2">Time Left</div>
+                            {(() => {
+                                const t = splitTime(timeLeft)
+                                return (
+                                    <div className="flex justify-center gap-6">
+                                        <div className="text-center">
+                                            <div className="text-3xl font-bold text-gray-900">{t.hours}</div>
+                                            <div className="text-[11px] text-gray-500">hours</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-3xl font-bold text-gray-900">{t.minutes}</div>
+                                            <div className="text-[11px] text-gray-500">minutes</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-3xl font-bold text-gray-900">{t.seconds}</div>
+                                            <div className="text-[11px] text-gray-500">seconds</div>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+                            {timeLeft !== null && timeLeft <= 60 && timeLeft > 0 && (
+                                <div className="text-center text-yellow-600 font-semibold text-xs mt-1">Last minute!</div>
+                            )}
+                        </div>
+                        <div className="flex items-left justify-left gap-2 mt-6 text-left">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                                 <span className="text-xs font-medium">👤</span>
                             </div>
-                            <span className="text-sm text-gray-600">Test Profile</span>
+                            <span className="text-sm text-gray-600 font-bold">Test Profile</span>
                         </div>
                     </div>
 
@@ -1293,6 +1350,58 @@ export default function AssessmentRoundPage() {
                         )}
                     </div>
 
+                </div>
+            </div>
+
+            {/* Full-width Bottom Action Bar */}
+            <div className="w-full border-t bg-gray-50 sticky bottom-0">
+                <div className="w-full px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <button
+                            onClick={handleMarkForReview}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                        >
+                            Mark for review
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (currentQuestion > 0) {
+                                    navigateToQuestion(currentQuestion - 1)
+                                }
+                            }}
+                            disabled={currentQuestion <= 0}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (currentQuestion < roundData.questions.length - 1) {
+                                    navigateToQuestion(currentQuestion + 1)
+                                }
+                            }}
+                            disabled={currentQuestion >= roundData.questions.length - 1}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded"
+                        >
+                            Next
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleClearResponse}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded border"
+                        >
+                            Clear Response
+                        </button>
+                        <button
+                            onClick={handleSubmitWithConfirmation}
+                            disabled={submitting}
+                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded"
+                        >
+                            {submitting ? 'Submitting...' : 'Submit Section'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

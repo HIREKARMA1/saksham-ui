@@ -111,7 +111,7 @@ export function Footer() {
               <div className="relative w-[150px] h-16">
                 <Image
                   src="/images/HKlogowhite.png"
-                  alt="HireKarma Logo"
+                  alt="Solviq AI Logo"
                   fill
                   className="object-contain"
                 />

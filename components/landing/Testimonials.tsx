@@ -27,7 +27,7 @@ export function Testimonials() {
       role: 'Software Engineer',
       company: 'Google',
       rating: 5,
-      text: 'Saksham AI helped me prepare for my dream job at Google. The mock interviews were incredibly realistic, and the AI feedback was spot-on. I highly recommend it to anyone serious about landing a great job.',
+      text: 'Solviq AI helped me prepare for my dream job at Google. The mock interviews were incredibly realistic, and the AI feedback was spot-on. I highly recommend it to anyone serious about landing a great job.',
     },
     {
       id: '2',
@@ -43,7 +43,7 @@ export function Testimonials() {
       role: 'Product Manager',
       company: 'Amazon',
       rating: 5,
-      text: 'As someone who struggled with technical interviews, Saksham gave me the confidence and preparation I needed. The question bank is comprehensive, and the real-time feedback helped me improve quickly.',
+      text: 'As someone who struggled with technical interviews, Solviq gave me the confidence and preparation I needed. The question bank is comprehensive, and the real-time feedback helped me improve quickly.',
     },
     {
       id: '4',
@@ -51,7 +51,7 @@ export function Testimonials() {
       role: 'Full Stack Developer',
       company: 'Flipkart',
       rating: 5,
-      text: 'I used Saksham for 3 months and secured 4 job offers! The mock interviews felt so real that I was completely prepared for the actual ones. This platform is a must-have for job seekers.',
+      text: 'I used Solviq for 3 months and secured 4 job offers! The mock interviews felt so real that I was completely prepared for the actual ones. This platform is a must-have for job seekers.',
     },
     {
       id: '5',
@@ -67,7 +67,7 @@ export function Testimonials() {
       role: 'Business Analyst',
       company: 'Deloitte',
       rating: 5,
-      text: 'Saksham\'s analytics dashboard helped me track my progress and identify weak areas. The personalized learning path was incredibly effective. I landed my dream job within 2 months!',
+      text: 'Solviq\'s analytics dashboard helped me track my progress and identify weak areas. The personalized learning path was incredibly effective. I landed my dream job within 2 months!',
     },
   ];
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -119,7 +120,20 @@ export default function AssessmentPage() {
         }
     }
 
-    const handleStartRound = (roundNumber: number) => {
+    const requestFullscreen = async () => {
+        try {
+            const elem: any = document.documentElement
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) await elem.requestFullscreen()
+                else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen()
+            }
+        } catch (e) {
+            // Ignore; some browsers block without gesture, but this is in the click handler
+        }
+    }
+
+    const handleStartRound = async (roundNumber: number) => {
+        await requestFullscreen()
         router.push(`/dashboard/student/assessment/round?assessment_id=${assessmentId}&round=${roundNumber}`)
     }
 
@@ -145,6 +159,17 @@ export default function AssessmentPage() {
             case 'in_progress': return <Clock className="w-4 h-4" />
             default: return <Play className="w-4 h-4" />
         }
+    }
+
+    // Light hover/tint background per round type to match landing theme
+    const roundHoverBg: Record<string, string> = {
+        aptitude: 'from-blue-50 to-blue-100/60 dark:from-blue-900/20 dark:to-blue-900/10',
+        soft_skills: 'from-green-50 to-green-100/60 dark:from-green-900/20 dark:to-green-900/10',
+        group_discussion: 'from-violet-50 to-violet-100/60 dark:from-violet-900/20 dark:to-violet-900/10',
+        technical_mcq: 'from-purple-50 to-purple-100/60 dark:from-purple-900/20 dark:to-purple-900/10',
+        coding: 'from-emerald-50 to-emerald-100/60 dark:from-emerald-900/20 dark:to-emerald-900/10',
+        technical_interview: 'from-orange-50 to-orange-100/60 dark:from-orange-900/20 dark:to-orange-900/10',
+        hr_interview: 'from-pink-50 to-pink-100/60 dark:from-pink-900/20 dark:to-pink-900/10',
     }
 
     if (loading) {
@@ -178,76 +203,101 @@ export default function AssessmentPage() {
             <DashboardLayout requiredUserType="student">
                 <div className="space-y-6">
                 {/* Header */}
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-3xl font-bold">Assessment Overview</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <div className="relative overflow-hidden rounded-2xl p-6 md:p-8 bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 border">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h1 className="text-3xl font-bold gradient-text">Assessment Overview</h1>
+                            <p className="text-gray-600 dark:text-gray-400 mt-2">
                             {assessment.job_role?.title || 'Assessment'} - {assessment.job_role?.category || 'General'}
-                        </p>
-                                        </div>
-                    <div className="text-right">
-                        <Badge variant="outline" className="mb-2">
-                            {assessment.status?.toUpperCase() || 'ACTIVE'}
-                                            </Badge>
-                        <p className="text-sm text-gray-500">
-                            Started: {new Date(assessment.started_at).toLocaleDateString()}
                             </p>
                         </div>
+                        <div className="text-right">
+                            <Badge variant="outline" className="mb-2">
+                                {assessment.status?.toUpperCase() || 'ACTIVE'}
+                            </Badge>
+                            <p className="text-sm text-gray-500">Started: {new Date(assessment.started_at).toLocaleDateString()}</p>
+                        </div>
                     </div>
+                    <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rotate-45 bg-gradient-to-br from-primary-100/40 to-secondary-100/30 dark:from-primary-900/30 dark:to-secondary-900/20" />
+                </div>
 
                     {/* Assessment Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Card>
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <BarChart3 className="w-5 h-5 text-blue-500" />
-                                            <div>
-                                    <p className="text-sm font-medium">Overall Score</p>
-                                    <p className="text-2xl font-bold">{assessment.overall_score || 0}</p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <Award className="w-5 h-5 text-green-500" />
-                                <div>
-                                    <p className="text-sm font-medium">Readiness Index</p>
-                                    <p className="text-2xl font-bold">{assessment.readiness_index || 0}%</p>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                        <CardContent className="p-6 relative z-10">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <BarChart3 className="w-6 h-6 text-blue-500" />
+                                    <div>
+                                        <p className="text-sm font-medium">Overall Score</p>
+                                        <p className="text-3xl font-bold">{assessment.overall_score || 0}</p>
+                                    </div>
                                 </div>
-                    </div>
-                            </CardContent>
-                        </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <CheckCircle className="w-5 h-5 text-purple-500" />
-                <div>
-                                    <p className="text-sm font-medium">Completed Rounds</p>
-                                    <p className="text-2xl font-bold">
-                                        {assessment.rounds?.filter((r: any) => r.status === 'COMPLETED').length || 0}
-                    </p>
-                </div>
                             </div>
                         </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                                <Clock className="w-5 h-5 text-orange-500" />
-                                <div>
-                                    <p className="text-sm font-medium">Total Duration</p>
-                                    <p className="text-2xl font-bold">
-                                        {assessment.rounds?.reduce((total: number, round: any) => {
-                                            const duration = roundDisplay[round.round_type]?.duration || '0 min'
-                                            return total + parseInt(duration)
-                                        }, 0) || 0} min
-                                    </p>
-                                        </div>
+                        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-blue-200/50 to-blue-100/20 dark:from-blue-900/30 dark:to-blue-800/10" />
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-blue-50 to-blue-100/70 dark:from-blue-900/20 dark:to-blue-900/10" />
+                                </Card>
+                        </motion.div>
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                    <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                        <CardContent className="p-6 relative z-10">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <Award className="w-6 h-6 text-green-500" />
+                                    <div>
+                                        <p className="text-sm font-medium">Readiness Index</p>
+                                        <p className="text-3xl font-bold">{assessment.readiness_index || 0}%</p>
+                                    </div>
                                 </div>
+                            </div>
                             </CardContent>
+                        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-green-200/50 to-green-100/20 dark:from-green-900/30 dark:to-green-800/10" />
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-green-50 to-green-100/70 dark:from-green-900/20 dark:to-green-900/10" />
                         </Card>
+                    </motion.div>
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                    <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                        <CardContent className="p-6 relative z-10">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <CheckCircle className="w-6 h-6 text-purple-500" />
+                                    <div>
+                                        <p className="text-sm font-medium">Completed Rounds</p>
+                                        <p className="text-3xl font-bold">
+                                            {assessment.rounds?.filter((r: any) => r.status === 'COMPLETED').length || 0}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-purple-200/50 to-purple-100/20 dark:from-purple-900/30 dark:to-purple-800/10" />
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-purple-50 to-purple-100/70 dark:from-purple-900/20 dark:to-purple-900/10" />
+                    </Card>
+                    </motion.div>
+                    <motion.div whileHover={{ y: -3, scale: 1.02 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                    <Card className="relative overflow-hidden card-hover min-h-[120px]">
+                        <CardContent className="p-6 relative z-10">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <Clock className="w-6 h-6 text-orange-500" />
+                                    <div>
+                                        <p className="text-sm font-medium">Total Duration</p>
+                                        <p className="text-3xl font-bold">
+                                            {assessment.rounds?.reduce((total: number, round: any) => {
+                                                const duration = roundDisplay[round.round_type]?.duration || '0 min'
+                                                return total + parseInt(duration)
+                                            }, 0) || 0} min
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            </CardContent>
+                            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-orange-200/50 to-orange-100/20 dark:from-orange-900/30 dark:to-orange-800/10" />
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-orange-50 to-orange-100/70 dark:from-orange-900/20 dark:to-orange-900/10" />
+                        </Card>
+                    </motion.div>
                 </div>
 
                 {/* Rounds */}
@@ -259,7 +309,7 @@ export default function AssessmentPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {assessment.rounds?.map((round: any, index: number) => {
                                 const roundInfo = roundDisplay[round.round_type] || {
                                     name: `Round ${round.round_number}`,
@@ -282,9 +332,20 @@ export default function AssessmentPage() {
                                 const isDisabled = !isRoundEnabled && !isCompleted
                                 
                                 return (
-                                    <div key={round.id} className={`flex items-center justify-between p-4 border rounded-lg`} style={{ opacity: isDisabled ? 0.5 : 1 }}>
-                                        <div className="flex items-center space-x-4">
-                                            <div className={`p-2 rounded-full ${roundInfo.color} text-white`}>
+                                    <motion.div
+                                        key={round.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ duration: 0.35, delay: index * 0.05 }}
+                                        whileHover={{ y: -2 }}
+                                        className={`group relative overflow-hidden flex items-center justify-between p-5 border rounded-2xl card-hover`}
+                                        style={{ opacity: isDisabled ? 0.5 : 1 }}
+                                    >
+                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br ${roundHoverBg[round.round_type] || 'from-primary-50 to-secondary-50'}`} />
+                                        <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full bg-gradient-to-br ${roundHoverBg[round.round_type] || 'from-primary-100/40 to-secondary-100/20'}`} />
+                                        <div className="flex items-center space-x-4 relative z-10">
+                                            <div className={`p-3 rounded-xl text-white shadow-sm ${roundInfo.color}`}>
                                                 <IconComponent className="w-5 h-5" />
                                             </div>
                                             <div>
@@ -293,8 +354,8 @@ export default function AssessmentPage() {
                                                 <p className="text-xs text-gray-500">{roundInfo.duration}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-4">
-                                            <Badge className={getStatusColor(status)}>
+                                        <div className="flex items-center space-x-4 relative z-10">
+                                            <Badge className={`${getStatusColor(status)} ${status === 'in_progress' ? 'animate-pulse' : ''}`}>
                                                 {getStatusIcon(status)}
                                                 <span className="ml-1 capitalize">{status.replace('_', ' ')}</span>
                                             </Badge>
@@ -314,7 +375,7 @@ export default function AssessmentPage() {
                                 </Button>
                                             )}
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 )
                             })}
                             </div>

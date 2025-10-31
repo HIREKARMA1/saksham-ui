@@ -7,6 +7,7 @@ import { LandingNavbar } from '@/components/landing/LandingNavbar'
 import { LandingSidebar } from '@/components/landing/LandingSidebar'
 import { MobileNavbar } from '@/components/landing/MobileNavbar'
 import { Loader } from '@/components/ui/loader'
+import { DropdownMenuProvider } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
@@ -65,7 +66,7 @@ export function DashboardLayout({ children, requiredUserType }: DashboardLayoutP
                 <main
                     className={cn(
                         "flex-1 transition-all duration-300 p-6 overflow-y-auto",
-                        "pt-20 lg:pt-6", // Add top padding on mobile for mobile navbar
+                        "pt-20 lg:pt-24", // Add top padding on mobile for mobile navbar
                         isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
                     )}
                 >
