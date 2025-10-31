@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users } from 'lucide-react'
+import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
@@ -25,6 +26,9 @@ const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
 const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
+const ComposedChart = dynamic(() => import('recharts').then(m => m.ComposedChart), { ssr: false })
+const Area = dynamic(() => import('recharts').then(m => m.Area), { ssr: false })
+const LabelList = dynamic(() => import('recharts').then(m => m.LabelList), { ssr: false })
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
@@ -33,6 +37,117 @@ const sidebarItems = [
     { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
     { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
 ]
+
+// Hover-enabled stat card component
+function StatCard({ icon: Icon, label, value, color, bgColor, colorClass }: { icon: any, label: string, value: string | number, color: string, bgColor: string, colorClass: string }) {
+    const [isHovered, setIsHovered] = useState(false)
+    
+    // Get the gradient colors based on colorClass
+    const getGradientColors = () => {
+        switch(colorClass) {
+            case 'blue': return 'from-blue-200/50 to-blue-100/20 dark:from-blue-900/30 dark:to-blue-800/10'
+            case 'purple': return 'from-purple-200/50 to-purple-100/20 dark:from-purple-900/30 dark:to-purple-800/10'
+            case 'pink': return 'from-pink-200/50 to-pink-100/20 dark:from-pink-900/30 dark:to-pink-800/10'
+            case 'yellow': return 'from-yellow-200/50 to-yellow-100/20 dark:from-yellow-900/30 dark:to-yellow-800/10'
+            default: return 'from-gray-200/50 to-gray-100/20 dark:from-gray-900/30 dark:to-gray-800/10'
+        }
+    }
+    
+    return (
+        <motion.div 
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            whileHover={{ y: -8 }} 
+            transition={{ duration: 0.3 }}
+            className="relative"
+        >
+            <Card className="relative overflow-hidden card-hover min-h-[120px] group border-2 border-transparent hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-500">
+                {/* Animated Background Gradient */}
+                <motion.div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-transparent via-primary-50/50 to-secondary-50/50 dark:from-transparent dark:via-primary-900/20 dark:to-secondary-900/20"
+                    initial={false}
+                    animate={isHovered ? { scale: 1 } : { scale: 0.8 }}
+                />
+                
+                {/* Sparkle Effects */}
+                {isHovered && (
+                    <>
+                        {[...Array(4)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                                animate={{
+                                    opacity: [0, 1, 0],
+                                    scale: [0, 1, 0],
+                                    x: [0, (Math.random() - 0.5) * 60],
+                                    y: [0, (Math.random() - 0.5) * 60],
+                                }}
+                                transition={{
+                                    duration: 1,
+                                    delay: i * 0.1,
+                                    ease: 'easeOut',
+                                }}
+                                className="absolute top-1/2 left-1/2 w-1 h-1 bg-primary-400 rounded-full"
+                            />
+                        ))}
+                    </>
+                )}
+                
+                <CardContent className="p-6 relative z-10">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                            <motion.div
+                                animate={isHovered ? { rotate: [0, -10, 10, -10, 0] } : { rotate: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <motion.div
+                                    animate={isHovered ? { scale: 1.2 } : { scale: 1 }}
+                                    transition={{ duration: 0.3 }}
+                                    className={`${bgColor} p-2 rounded-lg shadow-md`}
+                                >
+                                    <Icon className={`w-6 h-6 ${color}`} />
+                                </motion.div>
+                            </motion.div>
+                            <div>
+                                <p className="text-sm font-medium">{label}</p>
+                                <motion.p 
+                                    animate={isHovered ? { scale: 1.05 } : { scale: 1 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="text-3xl font-bold"
+                                >
+                                    {value}
+                                </motion.p>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+                
+                {/* Decorative shape with animation */}
+                <motion.div 
+                    className={`absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br ${getGradientColors()}`}
+                    animate={isHovered ? { scale: 1.2, rotate: 360 } : { scale: 1, rotate: 0 }}
+                    transition={{ duration: 0.6 }}
+                />
+                
+                {/* Bottom accent line */}
+                <motion.div
+                    className={`absolute bottom-0 left-0 h-1 rounded-full ${bgColor}`}
+                    initial={{ width: '0%' }}
+                    animate={isHovered ? { width: '100%' } : { width: '0%' }}
+                    transition={{ duration: 0.4 }}
+                />
+                
+                {/* Corner decoration */}
+                <motion.div
+                    className={`absolute top-0 right-0 w-20 h-20 opacity-5 ${bgColor}`}
+                    style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
+                    animate={isHovered ? { scale: 1.5, opacity: 0.1 } : { scale: 1, opacity: 0.05 }}
+                    transition={{ duration: 0.4 }}
+                />
+            </Card>
+        </motion.div>
+    )
+}
 
 export default function StudentDashboard() {
     const [stats, setStats] = useState<any>(null)
@@ -125,13 +240,57 @@ export default function StudentDashboard() {
     return (
         <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
             <div className="space-y-6">
-                {/* Welcome Section - Enhanced */}
-                <div className="bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-950 dark:to-purple-950 rounded-2xl p-6 md:p-8 shadow-sm">
-                    <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                        Welcome Back! 👋
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-lg">Track your progress and continue your placement journey</p>
+                {/* Header - Matching Assessment Overview Style with Hover Animations */}
+                <motion.div 
+                    className="relative overflow-hidden rounded-2xl p-6 md:p-8 text-gray-900 dark:text-white border bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 group"
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    {/* Decorative corners */}
+                    <motion.div 
+                        className="pointer-events-none absolute -top-12 -right-12 w-56 h-56 rotate-45 bg-gradient-to-br from-primary-100/40 to-secondary-100/30 dark:from-primary-900/30 dark:to-secondary-900/20"
+                        animate={{ rotate: [45, 50, 45] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <motion.div 
+                        className="pointer-events-none absolute -bottom-14 -left-14 w-64 h-64 rounded-full bg-gradient-to-tr from-secondary-100/30 to-accent-100/20 dark:from-secondary-900/20 dark:to-accent-900/10"
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <motion.div 
+                                        className="p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                                        animate={{ rotate: [0, 360] }}
+                                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                    >
+                                        <Sparkles className="h-6 w-6" />
+                                    </motion.div>
+                                    <motion.h1 
+                                        className="text-3xl md:text-4xl font-bold gradient-text"
+                                        animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                                        transition={{ duration: 3, repeat: Infinity }}
+                                        style={{ backgroundSize: '200% 200%' }}
+                                    >
+                                        <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Welcome Back!</span>{' '}
+                                        <motion.span 
+                                            className="inline-block"
+                                            animate={{ rotate: [0, 20, -20, 0] }}
+                                            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                                        >
+                                            👋
+                                        </motion.span>
+                                    </motion.h1>
+                                </div>
+                                <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                                    Track your progress and continue your placement journey
+                                </p>
+                            </div>
+                        </div>
                 </div>
+                </motion.div>
 
                 {loading ? (
                     <div className="flex justify-center py-12">
@@ -139,126 +298,184 @@ export default function StudentDashboard() {
                     </div>
                 ) : (
                     <>
-                        {/* Stats Cards - Redesigned with Pastel Colors */}
+                        {/* Stats Cards - With Landing Page Hover Animations */}
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {/* Assessments Completed - Light Blue */}
-                            <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-6 transition-all duration-300 hover:shadow-lg hover:scale-105">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-blue-200 dark:bg-blue-800 rounded-xl">
-                                        <Target className="h-6 w-6 text-blue-600 dark:text-blue-300" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-blue-600 dark:text-blue-300 mb-1">Assessments Completed</p>
-                                    <h3 className="text-4xl font-bold text-blue-900 dark:text-blue-100">{stats?.assessments_completed || 0}</h3>
-                                </div>
+                            <StatCard 
+                                icon={Target} 
+                                label="Assessments Completed" 
+                                value={stats?.assessments_completed || 0}
+                                color="text-blue-600 dark:text-blue-400"
+                                bgColor="bg-blue-200 dark:bg-blue-800"
+                                colorClass="blue"
+                            />
+                            <StatCard 
+                                icon={TrendingUp} 
+                                label="Average Score" 
+                                value={`${stats?.average_score || 0}%`}
+                                color="text-purple-600 dark:text-purple-400"
+                                bgColor="bg-purple-200 dark:bg-purple-800"
+                                colorClass="purple"
+                            />
+                            <StatCard 
+                                icon={Award} 
+                                label="ATS Score" 
+                                value={`${stats?.ats_score || 0}%`}
+                                color="text-pink-600 dark:text-pink-400"
+                                bgColor="bg-pink-200 dark:bg-pink-800"
+                                colorClass="pink"
+                            />
+                            <StatCard 
+                                icon={Users} 
+                                label="Job Matches" 
+                                value={stats?.job_recommendations || 0}
+                                color="text-yellow-600 dark:text-yellow-400"
+                                bgColor="bg-yellow-200 dark:bg-yellow-800"
+                                colorClass="yellow"
+                            />
                             </div>
 
-                            {/* Average Score - Light Purple */}
-                            <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 p-6 transition-all duration-300 hover:shadow-lg hover:scale-105">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-purple-200 dark:bg-purple-800 rounded-xl">
-                                        <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-300" />
+                        {/* Two Column Layout: Quick Actions Left, Detailed Analysis Right */}
+                        <div className="grid lg:grid-cols-2 gap-6">
+                            {/* Quick Actions - Left Side */}
+                            <motion.div 
+                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 relative overflow-hidden group"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                {/* Decorative shapes for Quick Actions */}
+                                <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br from-blue-200/30 to-cyan-200/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-gradient-to-tr from-purple-200/25 to-pink-200/15 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                
+                                <div className="mb-6 relative z-10">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                                            <Zap className="h-4 w-4 text-white" />
                                     </div>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-purple-600 dark:text-purple-300 mb-1">Average Score</p>
-                                    <h3 className="text-4xl font-bold text-purple-900 dark:text-purple-100">{stats?.average_score || 0}%</h3>
-                                </div>
-                            </div>
-
-                            {/* ATS Score - Light Pink */}
-                            <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 p-6 transition-all duration-300 hover:shadow-lg hover:scale-105">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-pink-200 dark:bg-pink-800 rounded-xl">
-                                        <Award className="h-6 w-6 text-pink-600 dark:text-pink-300" />
+                                        <h2 className="text-2xl font-bold gradient-text">Quick Actions</h2>
                                     </div>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-pink-600 dark:text-pink-300 mb-1">ATS Score</p>
-                                    <h3 className="text-4xl font-bold text-pink-900 dark:text-pink-100">{stats?.ats_score || 0}%</h3>
-                                </div>
-                            </div>
-
-                            {/* Job Matches - Light Yellow */}
-                            <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 p-6 transition-all duration-300 hover:shadow-lg hover:scale-105">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-yellow-200 dark:bg-yellow-800 rounded-xl">
-                                        <Users className="h-6 w-6 text-yellow-600 dark:text-yellow-300" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">Job Matches</p>
-                                    <h3 className="text-4xl font-bold text-yellow-900 dark:text-yellow-100">{stats?.job_recommendations || 0}</h3>
-                                </div>
-                            </div>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm">Get started with your placement preparation</p>
                         </div>
 
-                        {/* Quick Actions - Redesigned */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Quick Actions</h2>
-                                <p className="text-gray-600 dark:text-gray-400 mt-1">Get started with your placement preparation</p>
-                            </div>
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <Link href="/dashboard/student/resume" className="group">
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-md transition-all duration-200 hover:scale-105">
-                                        <div className="p-3 bg-blue-200 dark:bg-blue-800 rounded-lg">
-                                            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                                        </div>
-                                        <span className="font-medium text-blue-900 dark:text-blue-100">
+                                <div className="grid gap-4 relative z-10">
+                                    <Link href="/dashboard/student/resume" className="group/action">
+                                        <motion.div 
+                                            className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border border-blue-200/50 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg transition-all duration-300"
+                                            whileHover={{ scale: 1.02, x: 5 }}
+                                        >
+                                            <motion.div 
+                                                className="p-3 bg-blue-200 dark:bg-blue-800 rounded-lg group-hover/action:bg-gradient-to-br group-hover/action:from-blue-400 group-hover/action:to-blue-500 transition-all duration-300"
+                                                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                                                transition={{ duration: 0.5 }}
+                                            >
+                                                <FileText className="h-5 w-5 text-blue-600 dark:text-blue-300 group-hover/action:text-white transition-colors" />
+                                            </motion.div>
+                                            <span className="font-semibold text-blue-900 dark:text-blue-100 group-hover/action:text-blue-700 dark:group-hover/action:text-blue-200 transition-colors">
                                         {stats?.resume_uploaded ? 'Update Resume' : 'Upload Resume'}
                                         </span>
-                                    </div>
+                                        </motion.div>
                                 </Link>
 
-                                <Link href="/dashboard/student/jobs" className="group">
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 hover:shadow-md transition-all duration-200 hover:scale-105">
-                                        <div className="p-3 bg-green-200 dark:bg-green-800 rounded-lg">
-                                            <Briefcase className="h-5 w-5 text-green-600 dark:text-green-300" />
-                                        </div>
-                                        <span className="font-medium text-green-900 dark:text-green-100">Browse Jobs</span>
-                                    </div>
+                                    <Link href="/dashboard/student/jobs" className="group/action">
+                                        <motion.div 
+                                            className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border border-green-200/50 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 hover:shadow-lg transition-all duration-300"
+                                            whileHover={{ scale: 1.02, x: 5 }}
+                                        >
+                                            <motion.div 
+                                                className="p-3 bg-green-200 dark:bg-green-800 rounded-lg group-hover/action:bg-gradient-to-br group-hover/action:from-green-400 group-hover/action:to-green-500 transition-all duration-300"
+                                                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                                                transition={{ duration: 0.5 }}
+                                            >
+                                                <Briefcase className="h-5 w-5 text-green-600 dark:text-green-300 group-hover/action:text-white transition-colors" />
+                                            </motion.div>
+                                            <span className="font-semibold text-green-900 dark:text-green-100 group-hover/action:text-green-700 dark:group-hover/action:text-green-200 transition-colors">
+                                                Browse Jobs
+                                            </span>
+                                        </motion.div>
                                 </Link>
                                 
-                                <Link href="/dashboard/student/assessment" className="group">
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:shadow-md transition-all duration-200 hover:scale-105">
-                                        <div className="p-3 bg-purple-200 dark:bg-purple-800 rounded-lg">
-                                            <ClipboardList className="h-5 w-5 text-purple-600 dark:text-purple-300" />
-                                        </div>
-                                        <span className="font-medium text-purple-900 dark:text-purple-100">Take Assessment</span>
-                                    </div>
+                                    <Link href="/dashboard/student/assessment" className="group/action">
+                                        <motion.div 
+                                            className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border border-purple-200/50 dark:border-purple-800/50 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg transition-all duration-300"
+                                            whileHover={{ scale: 1.02, x: 5 }}
+                                        >
+                                            <motion.div 
+                                                className="p-3 bg-purple-200 dark:bg-purple-800 rounded-lg group-hover/action:bg-gradient-to-br group-hover/action:from-purple-400 group-hover/action:to-purple-500 transition-all duration-300"
+                                                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                                                transition={{ duration: 0.5 }}
+                                            >
+                                                <ClipboardList className="h-5 w-5 text-purple-600 dark:text-purple-300 group-hover/action:text-white transition-colors" />
+                                            </motion.div>
+                                            <span className="font-semibold text-purple-900 dark:text-purple-100 group-hover/action:text-purple-700 dark:group-hover/action:text-purple-200 transition-colors">
+                                                Take Assessment
+                                            </span>
+                                        </motion.div>
                                 </Link>
 
-                                <Link href="/dashboard/student/assessment/history" className="group">
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 hover:shadow-md transition-all duration-200 hover:scale-105">
-                                        <div className="p-3 bg-pink-200 dark:bg-pink-800 rounded-lg">
-                                            <ClipboardList className="h-5 w-5 text-pink-600 dark:text-pink-300" />
-                                        </div>
-                                        <span className="font-medium text-pink-900 dark:text-pink-100">Assessment History</span>
-                                    </div>
+                                    <Link href="/dashboard/student/assessment/history" className="group/action">
+                                        <motion.div 
+                                            className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950 dark:to-pink-900 border border-pink-200/50 dark:border-pink-800/50 hover:border-pink-300 dark:hover:border-pink-700 hover:shadow-lg transition-all duration-300"
+                                            whileHover={{ scale: 1.02, x: 5 }}
+                                        >
+                                            <motion.div 
+                                                className="p-3 bg-pink-200 dark:bg-pink-800 rounded-lg group-hover/action:bg-gradient-to-br group-hover/action:from-pink-400 group-hover/action:to-pink-500 transition-all duration-300"
+                                                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                                                transition={{ duration: 0.5 }}
+                                            >
+                                                <ClipboardList className="h-5 w-5 text-pink-600 dark:text-pink-300 group-hover/action:text-white transition-colors" />
+                                            </motion.div>
+                                            <span className="font-semibold text-pink-900 dark:text-pink-100 group-hover/action:text-pink-700 dark:group-hover/action:text-pink-200 transition-colors">
+                                                Assessment History
+                                            </span>
+                                        </motion.div>
                                 </Link>
 
-                                <Link href="/dashboard/student/profile" className="group">
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 hover:shadow-md transition-all duration-200 hover:scale-105">
-                                        <div className="p-3 bg-orange-200 dark:bg-orange-800 rounded-lg">
-                                            <User className="h-5 w-5 text-orange-600 dark:text-orange-300" />
-                                        </div>
-                                        <span className="font-medium text-orange-900 dark:text-orange-100">Update Profile</span>
-                                    </div>
-                                </Link>
-                            </div>
-                        </div>
+                                    <Link href="/dashboard/student/profile" className="group/action">
+                                        <motion.div 
+                                            className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border border-orange-200/50 dark:border-orange-800/50 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-lg transition-all duration-300"
+                                            whileHover={{ scale: 1.02, x: 5 }}
+                                        >
+                                            <motion.div 
+                                                className="p-3 bg-orange-200 dark:bg-orange-800 rounded-lg group-hover/action:bg-gradient-to-br group-hover/action:from-orange-400 group-hover/action:to-orange-500 transition-all duration-300"
+                                                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                                                transition={{ duration: 0.5 }}
+                                            >
+                                                <User className="h-5 w-5 text-orange-600 dark:text-orange-300 group-hover/action:text-white transition-colors" />
+                                            </motion.div>
+                                            <span className="font-semibold text-orange-900 dark:text-orange-100 group-hover/action:text-orange-700 dark:group-hover/action:text-orange-200 transition-colors">
+                                                Update Profile
+                                            </span>
+                                        </motion.div>
+                                    </Link>
+                                </div>
+                            </motion.div>
 
-                        {/* Detailed Analysis - Redesigned */}
-                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-2xl shadow-sm p-6">
-                            <div className="mb-4">
-                                <h2 className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">Detailed Analysis</h2>
-                                <p className="text-indigo-700 dark:text-indigo-300 mt-1">
+                            {/* Detailed Analysis - Right Side */}
+                            <motion.div 
+                                className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 rounded-2xl shadow-lg p-6 relative overflow-hidden group"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                {/* Decorative shapes for Detailed Analysis */}
+                                <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-gradient-to-br from-indigo-300/30 to-purple-300/20 blur-3xl group-hover:blur-[40px] transition-all duration-500" />
+                                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-tr from-pink-300/25 to-rose-300/15 blur-3xl group-hover:blur-[40px] transition-all duration-500" />
+                                <div className="absolute top-1/2 right-0 w-20 h-20 rounded-full bg-gradient-to-br from-purple-200/20 to-indigo-200/10 blur-2xl opacity-60 group-hover:opacity-80 transition-all duration-500" />
+                                
+                                <div className="mb-6 relative z-10">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg">
+                                            <TrendingUp className="h-4 w-4 text-white" />
+                                        </div>
+                                        <h2 className="text-2xl font-bold gradient-text">Detailed Analysis</h2>
+                                    </div>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">
                                     View your latest assessment report with per-question breakdown and AI insights
                                 </p>
                             </div>
-                                <div className="flex flex-wrap items-center gap-3">
+                                
+                                <div className="flex flex-col gap-4 relative z-10">
+                                    <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
                                     <Button
                                         disabled={!latestReport.id}
                                         onClick={() => {
@@ -266,21 +483,38 @@ export default function StudentDashboard() {
                                                 window.location.href = `/dashboard/student/assessment/report?id=${latestReport.id}`
                                             }
                                         }}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-base font-semibold"
                                     >
                                         {latestReport.id ? 'View Latest Report' : 'No completed assessments yet'}
                                     </Button>
+                                    </motion.div>
+                                    
                                     {latestReport.date && (
-                                    <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                                            Last completed: {new Date(latestReport.date).toLocaleString()}
-                                        </span>
+                                        <div className="flex items-center gap-2 p-4 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-indigo-200/50 dark:border-indigo-800/50">
+                                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                                                <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Last completed</p>
+                                                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                                                    {new Date(latestReport.date).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
                                     )}
-                                    <Link href="/dashboard/student/assessment/history" className="ml-auto">
-                                    <Button variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900">
+                                    
+                                    <Link href="/dashboard/student/assessment/history">
+                                        <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+                                            <Button 
+                                                variant="outline" 
+                                                className="w-full border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-all duration-300 py-6 text-base font-semibold"
+                                            >
                                         Browse All Reports
                                     </Button>
+                                        </motion.div>
                                     </Link>
                                 </div>
+                            </motion.div>
                         </div>
 
                         {/* Resume Status */}
@@ -303,82 +537,259 @@ export default function StudentDashboard() {
                             </Card>
                         )}
 
-                        {/* Analytics */}
+                        {/* Analytics Section - Redesigned with Assessment Report Styling */}
                         {analytics && analytics.total_assessments > 0 ? (
-                            <div className="grid lg:grid-cols-3 gap-6">
-                                <Card className="lg:col-span-2">
-                                    <CardHeader>
-                                        <CardTitle>Performance Trend</CardTitle>
-                                        <CardDescription>Overall score and readiness over time</CardDescription>
+                            <div className="space-y-6">
+                                {/* Performance Trend Analysis */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                >
+                                    <Card className="relative overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 bg-white dark:bg-gray-900 shadow-lg hover:scale-[1.01] group">
+                                        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-cyan-200/30 to-blue-100/10 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                        <CardHeader className="relative z-10 border-b border-gray-200 dark:border-gray-700">
+                                            <CardTitle className="flex items-center gap-3 text-lg font-bold">
+                                                <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-md">
+                                                    <TrendingUp className="h-5 w-5 text-white" />
+                                                </div>
+                                                Performance Trend Analysis
+                                            </CardTitle>
+                                            <CardDescription className="mt-2">Track your progress across assessments over time</CardDescription>
                                     </CardHeader>
-                                    <CardContent style={{ height: 300 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={(analytics.trend || []).map((t: any) => ({ ...t, date: new Date(t.date).toLocaleDateString() }))}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="date" />
-                                                <YAxis domain={[0, 100]} />
-                                                <Tooltip />
-                                                <Legend />
-                                                <Line type="monotone" dataKey="overall_score" name="Overall %" stroke="#6366f1" />
-                                                <Line type="monotone" dataKey="readiness_index" name="Readiness %" stroke="#10b981" />
-                                            </LineChart>
+                                        <CardContent className="relative z-10">
+                                            <ResponsiveContainer width="100%" height={450}>
+                                                <ComposedChart data={(analytics.trend || []).map((t: any) => ({ ...t, date: new Date(t.date).toLocaleDateString() }))} margin={{ top: 20, right: 30, bottom: 10, left: 10 }}>
+                                                    <defs>
+                                                        <linearGradient id="colorOverallGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.6}/>
+                                                            <stop offset="30%" stopColor="#6366f1" stopOpacity={0.4}/>
+                                                            <stop offset="70%" stopColor="#6366f1" stopOpacity={0.15}/>
+                                                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0.03}/>
+                                                        </linearGradient>
+                                                        <linearGradient id="colorReadinessGradient" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.5}/>
+                                                            <stop offset="30%" stopColor="#10b981" stopOpacity={0.3}/>
+                                                            <stop offset="70%" stopColor="#10b981" stopOpacity={0.12}/>
+                                                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.02}/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                                    <XAxis 
+                                                        dataKey="date" 
+                                                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                                                        label={{ value: 'Assessment Date', position: 'insideBottom', offset: -5, fill: '#6b7280', style: { fontWeight: 'bold' } }}
+                                                    />
+                                                    <YAxis 
+                                                        domain={[0, 100]} 
+                                                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                                                        label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', fill: '#6b7280', style: { fontWeight: 'bold' } }}
+                                                    />
+                                                    <Tooltip 
+                                                        contentStyle={{ 
+                                                            backgroundColor: '#fff', 
+                                                            border: '1px solid #e5e7eb',
+                                                            borderRadius: '8px',
+                                                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                                        }}
+                                                        labelStyle={{ color: '#1f2937', fontWeight: 'bold' }}
+                                                        formatter={(value: any, name: string) => [`${value}%`, name]}
+                                                    />
+                                                    <Legend 
+                                                        wrapperStyle={{ paddingTop: '15px' }}
+                                                        iconType="line"
+                                                    />
+                                                    {/* Area under Overall Score line */}
+                                                    <Area 
+                                                        type="monotone" 
+                                                        dataKey="overall_score" 
+                                                        fill="url(#colorOverallGradient)" 
+                                                        stroke="none"
+                                                    />
+                                                    {/* Area under Readiness line */}
+                                                    <Area 
+                                                        type="monotone" 
+                                                        dataKey="readiness_index" 
+                                                        fill="url(#colorReadinessGradient)" 
+                                                        stroke="none"
+                                                    />
+                                                    {/* Overall Score Line */}
+                                                    <Line 
+                                                        type="monotone" 
+                                                        dataKey="overall_score" 
+                                                        stroke="#6366f1" 
+                                                        strokeWidth={3}
+                                                        dot={{ fill: '#6366f1', r: 7, strokeWidth: 3, stroke: '#fff' }}
+                                                        activeDot={{ r: 10, fill: '#6366f1', stroke: '#fff', strokeWidth: 3 }}
+                                                        name="Overall Score"
+                                                    />
+                                                    {/* Readiness Index Line */}
+                                                    <Line 
+                                                        type="monotone" 
+                                                        dataKey="readiness_index" 
+                                                        stroke="#10b981" 
+                                                        strokeWidth={2.5}
+                                                        strokeDasharray="5 5"
+                                                        dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }}
+                                                        activeDot={{ r: 8 }}
+                                                        name="Readiness Index"
+                                                    />
+                                                </ComposedChart>
                                         </ResponsiveContainer>
                                     </CardContent>
                                 </Card>
+                                </motion.div>
 
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Correct vs Incorrect</CardTitle>
-                                        <CardDescription>Last assessment rounds</CardDescription>
+                                {/* Correct vs Incorrect & Section-wise Performance */}
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {/* Correct vs Incorrect Pie Chart */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.1 }}
+                                    >
+                                        <Card className="relative overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 bg-white dark:bg-gray-900 shadow-lg hover:scale-[1.02] group">
+                                            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-green-200/30 to-emerald-200/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                            <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-gradient-to-tr from-green-200/25 to-teal-200/15 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                            <CardHeader className="relative z-10 border-b border-gray-200 dark:border-gray-700">
+                                                <CardTitle className="flex items-center gap-3 text-lg font-bold">
+                                                    <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 shadow-md">
+                                                        <Award className="h-5 w-5 text-white" />
+                                                    </div>
+                                                    Correct vs Incorrect
+                                                </CardTitle>
+                                                <CardDescription className="mt-2">Last assessment rounds breakdown</CardDescription>
                                     </CardHeader>
-                                    <CardContent style={{ height: 300 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
+                                            <CardContent className="relative z-10">
+                                                <ResponsiveContainer width="100%" height={400}>
                                             <PieChart>
-                                                <Pie dataKey="value" data={[
+                                                        <Pie 
+                                                            dataKey="value" 
+                                                            data={[
                                                     { name: 'Correct', value: analytics.correct_vs_incorrect?.correct || 0 },
                                                     { name: 'Incorrect', value: analytics.correct_vs_incorrect?.incorrect || 0 },
-                                                ]} outerRadius={100} label>
-                                                    <Cell fill="#10b981" />
-                                                    <Cell fill="#ef4444" />
+                                                            ]} 
+                                                            outerRadius={120} 
+                                                            innerRadius={60}
+                                                            label
+                                                        >
+                                                            <Cell fill="#10b981" stroke="#fff" strokeWidth={3} />
+                                                            <Cell fill="#ef4444" stroke="#fff" strokeWidth={3} />
                                                 </Pie>
-                                                <Tooltip />
-                                                <Legend />
+                                                        <Tooltip 
+                                                            contentStyle={{ 
+                                                                backgroundColor: '#fff', 
+                                                                border: '1px solid #e5e7eb',
+                                                                borderRadius: '8px',
+                                                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                                            }}
+                                                        />
+                                                        <Legend 
+                                                            wrapperStyle={{ paddingTop: '15px' }}
+                                                            iconType="circle"
+                                                        />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </CardContent>
                                 </Card>
+                                    </motion.div>
 
-                                <Card className="lg:col-span-3">
-                                    <CardHeader>
-                                        <CardTitle>Section-wise Performance</CardTitle>
-                                        <CardDescription>Percent by round in last assessment</CardDescription>
+                                    {/* Section-wise Performance Bar Chart */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.2 }}
+                                    >
+                                        <Card className="relative overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 bg-white dark:bg-gray-900 shadow-lg hover:scale-[1.02] group">
+                                            <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full bg-gradient-to-br from-purple-200/30 to-indigo-200/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                            <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-tr from-purple-200/25 to-pink-200/15 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+                                            <CardHeader className="relative z-10 border-b border-gray-200 dark:border-gray-700">
+                                                <CardTitle className="flex items-center gap-3 text-lg font-bold">
+                                                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 shadow-md">
+                                                        <Target className="h-5 w-5 text-white" />
+                                                    </div>
+                                                    Section-wise Performance
+                                                </CardTitle>
+                                                <CardDescription className="mt-2">Percent by round in last assessment</CardDescription>
                                     </CardHeader>
-                                    <CardContent style={{ height: 300 }}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={Object.entries(analytics.section_wise || {}).map(([k, v]) => ({ section: k, percentage: v }))}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="section" />
-                                                <YAxis domain={[0, 100]} />
-                                                <Tooltip />
-                                                <Bar dataKey="percentage" fill="#6366f1" />
+                                            <CardContent className="relative z-10">
+                                                <ResponsiveContainer width="100%" height={400}>
+                                                    <BarChart data={Object.entries(analytics.section_wise || {}).map(([k, v]) => ({ section: k, percentage: v }))} margin={{ top: 20, right: 30, bottom: 5, left: 10 }}>
+                                                        <defs>
+                                                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8}/>
+                                                                <stop offset="100%" stopColor="#6366f1" stopOpacity={0.4}/>
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                                        <XAxis 
+                                                            dataKey="section" 
+                                                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                                                            angle={-45}
+                                                            textAnchor="end"
+                                                            height={60}
+                                                        />
+                                                        <YAxis 
+                                                            domain={[0, 100]} 
+                                                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                                                            label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', fill: '#6b7280', style: { fontWeight: 'bold' } }}
+                                                        />
+                                                        <Tooltip 
+                                                            contentStyle={{ 
+                                                                backgroundColor: '#fff', 
+                                                                border: '1px solid #e5e7eb',
+                                                                borderRadius: '8px',
+                                                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                                            }}
+                                                            formatter={(value: any) => [`${value}%`, 'Performance']}
+                                                        />
+                                                        <Bar 
+                                                            dataKey="percentage" 
+                                                            fill="url(#barGradient)"
+                                                            radius={[8, 8, 0, 0]}
+                                                            animationBegin={0}
+                                                            animationDuration={800}
+                                                        >
+                                                            <LabelList 
+                                                                dataKey="percentage" 
+                                                                position="top" 
+                                                                formatter={(value: any) => `${value}%`}
+                                                                style={{ fill: '#6b7280', fontSize: '11px', fontWeight: 'bold' }}
+                                                            />
+                                                        </Bar>
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </CardContent>
                                 </Card>
+                                    </motion.div>
+                                </div>
                             </div>
                         ) : (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Performance Analytics</CardTitle>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <Card className="relative overflow-hidden border-0 shadow-lg">
+                                    <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-gray-200/30 to-gray-100/10 blur-2xl" />
+                                    <CardHeader className="relative z-10 border-b border-gray-200 dark:border-gray-700">
+                                        <CardTitle className="flex items-center gap-3 text-lg font-bold">
+                                            <div className="p-2 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 shadow-md">
+                                                <ClipboardList className="h-5 w-5 text-white" />
+                                            </div>
+                                            Performance Analytics
+                                        </CardTitle>
                                     <CardDescription>Detailed analytics will be available after completing assessments</CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="text-center py-12 text-gray-500">
-                                        <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                        <p>Complete your first assessment to see analytics</p>
+                                    <CardContent className="relative z-10">
+                                        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                                            <ClipboardList className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                                            <p className="text-lg font-medium">Complete your first assessment to see analytics</p>
+                                            <p className="text-sm mt-2">Track your progress and identify improvement areas</p>
                                     </div>
                                 </CardContent>
                             </Card>
+                            </motion.div>
                         )}
                     </>
                 )}

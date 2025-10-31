@@ -81,7 +81,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
                   {theme === 'dark' ? (
                     <Image
                       src="/images/HKlogowhite.png"
-                      alt="Saksham AI Logo"
+                      alt="Solviq AI Logo"
                       fill
                       className="object-contain"
                       priority
@@ -89,7 +89,7 @@ export function LandingNavbar({ className, onToggleSidebar, isSidebarCollapsed }
                   ) : (
                     <Image
                       src="/images/HKlogoblack.png"
-                      alt="Saksham AI Logo"
+                      alt="Solviq AI Logo"
                       fill
                       className="object-contain"
                       priority

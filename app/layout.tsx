@@ -8,13 +8,13 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-    title: 'Saksham - AI Interview Preparation Platform',
-    description: 'Get interview ready with AI-powered mock interviews, resume builder, job hunter, and real-time copilot assistance. Practice smarter and land your dream job.',
-    keywords: 'AI interview preparation, mock interview, resume builder, job search, career development, interview copilot',
+    title: 'Solviq AI - The Engine That Defines Readiness',
+    description: 'Get interview ready with Solviq AI - an AI Employability Engine that pushes you through real simulations, decodes your strengths, and builds your personalized skill path. AI precision, human ambition.',
+    keywords: 'AI interview preparation, employability engine, mock interview, resume builder, job search, career readiness, interview copilot',
     authors: [{ name: 'HireKarma' }],
     openGraph: {
-        title: 'Saksham - AI Interview Preparation Platform',
-        description: 'Build your resume, practice smarter, and get real-time support with AI Interview Assistant.',
+        title: 'Solviq AI - The Engine That Defines Readiness',
+        description: 'You\'ve got potential. Solviq AI makes sure the world sees it. AI precision, human ambition.',
         type: 'website',
     },
 }
