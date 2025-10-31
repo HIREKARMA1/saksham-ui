@@ -7,6 +7,7 @@ import {
   Briefcase,
   ClipboardList,
   Zap,
+  LayoutGrid,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { AnimatedBackground } from '@/components/ui/animated-background';
@@ -30,6 +31,12 @@ interface LandingSidebarProps {
 
 // Export features array so it can be reused in mobile nav
 export const sidebarFeatures: SidebarItem[] = [
+  {
+    id: 'dashboard',
+    icon: <LayoutGrid className="w-5 h-5" />,
+    label: 'Dashboard',
+    onClick: undefined, // Will be set by component
+  },
   {
     id: 'resume',
     icon: <FileText className="w-5 h-5" />,
@@ -67,6 +74,7 @@ export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatur
     if (!user) return null;
     const baseRoute = `/dashboard/${user.user_type}`;
     const routeMap: Record<string, string> = {
+      'dashboard': baseRoute,
       'resume': `${baseRoute}/resume`,
       'assessment': `${baseRoute}/assessment`,
       'jobs': `${baseRoute}/jobs`,
