@@ -19,7 +19,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // Define which pages exist and which are coming soon
-const EXISTING_PAGES = ['/#faq', '/auth/login', '/auth/register'];
+const EXISTING_PAGES = ['/#faq', '/auth/login'];
 
 export function Footer() {
   const { t } = useTranslation();
