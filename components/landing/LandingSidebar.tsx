@@ -12,7 +12,7 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { cn } from '@/lib/utils';
 
-interface SidebarItem {
+export interface SidebarItem {
   id: string;
   icon: React.ReactNode;
   label: string;
@@ -26,35 +26,41 @@ interface LandingSidebarProps {
   onFeatureChange?: (featureId: string | null) => void;
 }
 
+// Export features array so it can be reused in mobile nav
+export const sidebarFeatures: SidebarItem[] = [
+  {
+    id: 'resume',
+    icon: <FileText className="w-5 h-5" />,
+    label: 'Resume Analysis',
+    onClick: undefined, // Will be set by component
+  },
+  {
+    id: 'assessment',
+    icon: <ClipboardList className="w-5 h-5" />,
+    label: 'Mock Assessment',
+    onClick: undefined,
+  },
+  {
+    id: 'jobs',
+    icon: <Briefcase className="w-5 h-5" />,
+    label: 'Job Recommendations',
+    onClick: undefined,
+  },
+  {
+    id: 'auto-apply',
+    icon: <Zap className="w-5 h-5" />,
+    label: 'Auto Job Apply',
+    onClick: undefined,
+  },
+];
+
 export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatureChange }: LandingSidebarProps) {
   const { t } = useTranslation();
 
-  const features: SidebarItem[] = [
-    {
-      id: 'resume',
-      icon: <FileText className="w-5 h-5" />,
-      label: 'Resume Analysis',
-      onClick: () => onFeatureChange?.('resume'),
-    },
-    {
-      id: 'assessment',
-      icon: <ClipboardList className="w-5 h-5" />,
-      label: 'Mock Assessment',
-      onClick: () => onFeatureChange?.('assessment'),
-    },
-    {
-      id: 'jobs',
-      icon: <Briefcase className="w-5 h-5" />,
-      label: 'Job Recommendations',
-      onClick: () => onFeatureChange?.('jobs'),
-    },
-    {
-      id: 'auto-apply',
-      icon: <Zap className="w-5 h-5" />,
-      label: 'Auto Job Apply',
-      onClick: () => onFeatureChange?.('auto-apply'),
-    },
-  ];
+  const features = sidebarFeatures.map(item => ({
+    ...item,
+    onClick: () => onFeatureChange?.(item.id),
+  }));
 
   return (
     <motion.aside
@@ -69,6 +75,7 @@ export function LandingSidebar({ className, isCollapsed, activeFeature, onFeatur
         'bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg',
         'border-r border-gray-200/50 dark:border-gray-800/50',
         'shadow-lg',
+        'hidden lg:block', // Hide on mobile, show on desktop
         className
       )}
     >

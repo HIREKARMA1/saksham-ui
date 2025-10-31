@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { LandingNavbar } from './LandingNavbar';
 import { LandingSidebar } from './LandingSidebar';
+import { MobileNavbar } from './MobileNavbar';
 import { Footer } from './Footer';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,12 @@ export function LandingLayout({ children, activeFeature, onFeatureChange }: Land
         isSidebarCollapsed={isSidebarCollapsed}
       />
 
+      {/* Mobile Navigation Bar - Only visible on mobile */}
+      <MobileNavbar
+        activeFeature={activeFeature}
+        onFeatureChange={onFeatureChange}
+      />
+
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 flex-col">
         {/* Sidebar - Hidden on mobile */}
@@ -38,6 +45,7 @@ export function LandingLayout({ children, activeFeature, onFeatureChange }: Land
         <main
           className={cn(
             "flex-1 transition-all duration-300",
+            "pt-20 lg:pt-0", // Add top padding on mobile for mobile navbar (navbar h-20 + mobile nav height)
             isSidebarCollapsed ? "lg:ml-[80px]" : "lg:ml-[280px]"
           )}
         >
