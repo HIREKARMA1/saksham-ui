@@ -1,291 +1,362 @@
-"use client"
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Navbar } from '@/components/Navbar'
-import { useAuth } from '@/hooks/useAuth'
-import { Loader } from '@/components/ui/loader'
-
-const sliderImages = [
-    {
-        title: "Start Your Journey",
-        subtitle: "Achieve Your Dreams",
-        description: "Join thousands of students preparing for their dream placements",
-        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80" // Students learning
-    },
-    {
-        title: "Practice Smart",
-        subtitle: "Succeed Faster",
-        description: "AI-powered assessments tailored to your career goals",
-        image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80" // Team success
-    },
-    {
-        title: "Track Progress",
-        subtitle: "Stay Motivated",
-        description: "Real-time analytics and personalized feedback to guide your growth",
-        image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&q=80" // Professional growth
-    }
-]
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader } from '@/components/ui/loader';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
+import { AnimatedBackground } from '@/components/ui/animated-background';
+import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/lib/i18n/useTranslation';
+import { User, Mail, Lock, Phone, ArrowRight, Check } from 'lucide-react';
 
 export default function RegisterPage() {
-    const [formData, setFormData] = useState({
-        name: '',
-        lastName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        phone: '',
-    })
-    const [loading, setLoading] = useState(false)
-    const [currentSlide, setCurrentSlide] = useState(0)
-    const [agreedToTerms, setAgreedToTerms] = useState(false)
-    const { register } = useAuth()
-    const router = useRouter()
+  const [formData, setFormData] = useState({
+    name: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+  });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { register } = useAuth();
+  const router = useRouter();
+  const { t } = useTranslation();
 
-    // Auto-advance slider
-    useState(() => {
-        const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % sliderImages.length)
-        }, 5000)
-        return () => clearInterval(interval)
-    })
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError('');
+  };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        })
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        if (formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match')
-            return
-        }
-
-        if (!agreedToTerms) {
-            alert('Please agree to the Terms & Conditions')
-            return
-        }
-
-        setLoading(true)
-
-        try {
-            const fullName = formData.lastName
-                ? `${formData.name} ${formData.lastName}`
-                : formData.name
-
-            await register({
-                name: fullName,
-                email: formData.email,
-                password: formData.password,
-                phone: formData.phone,
-            })
-        } catch (error) {
-            console.error('Registration error:', error)
-        } finally {
-            setLoading(false)
-        }
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms & Conditions');
+      return;
     }
 
-    return (
-        <div className="min-h-screen flex flex-col">
-            {/* Navbar */}
-            <Navbar />
+    setLoading(true);
 
-            {/* Main Content */}
-            <div className="flex flex-1">
-                {/* Left Section - Image Slider */}
-                <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-                    {/* Background Images */}
-                    {sliderImages.map((slide, index) => (
-                        <div
-                            key={index}
-                            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
-                                }`}
-                        >
-                            {/* Image */}
-                            <div
-                                className="absolute inset-0 bg-cover bg-center"
-                                style={{ backgroundImage: `url(${slide.image})` }}
-                            />
+    try {
+      const fullName = formData.lastName
+        ? `${formData.name} ${formData.lastName}`
+        : formData.name;
 
-                            {/* Gradient Overlay - darker for better text readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-                        </div>
-                    ))}
+      await register({
+        name: fullName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+      });
+      
+      router.push('/dashboard/student');
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    {/* Content Container - Text at Bottom */}
-                    <div className="relative z-10 flex flex-col justify-end w-full p-12 pb-16">
-                        {/* Text Content */}
-                        <div className="max-w-lg text-white transition-all duration-500 ease-in-out">
-                            <h2 className="text-4xl font-bold mb-2">
-                                {sliderImages[currentSlide].title}
-                            </h2>
-                            <h2 className="text-4xl font-bold mb-4">
-                                {sliderImages[currentSlide].subtitle}
-                            </h2>
-                            <p className="text-lg text-white/90 mb-8">
-                                {sliderImages[currentSlide].description}
-                            </p>
+  return (
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 -z-10">
+        <AnimatedBackground variant="default" showGrid={true} showLines={true} />
+      </div>
 
-                            {/* Slider Indicators */}
-                            <div className="flex gap-2">
-                                {sliderImages.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentSlide(index)}
-                                        className={`h-1 rounded-full transition-all ${index === currentSlide ? 'w-8 bg-white' : 'w-4 bg-white/40'
-                                            }`}
-                                        aria-label={`Go to slide ${index + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      {/* Navbar */}
+      <LandingNavbar />
 
-                {/* Right Section - Register Form */}
-                <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
-                    <div className="w-full max-w-md">
-                        {/* Form Header */}
-                        <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Create an account
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-400">
-                                Already have an account?{' '}
-                                <Link href="/auth/login" className="text-primary-600 hover:underline font-medium">
-                                    Log in
-                                </Link>
-                            </p>
-                        </div>
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12 pt-24 md:pt-32 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Glassmorphism Card */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-900/80 dark:to-gray-800/60 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/30 shadow-2xl" />
+            
+            <div className="relative p-8 md:p-10">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <motion.h1
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2"
+                >
+                  {t('auth.register.title')}
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-600 dark:text-gray-400 mt-2"
+                >
+                  {t('auth.register.subtitle')}
+                </motion.p>
+              </div>
 
-                        {/* Register Form */}
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Name Fields */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        First name
-                                    </label>
-                                    <Input
-                                        id="name"
-                                        name="name"
-                                        type="text"
-                                        placeholder="Fletcher"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                        className="h-11"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="lastName" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Last name
-                                    </label>
-                                    <Input
-                                        id="lastName"
-                                        name="lastName"
-                                        type="text"
-                                        placeholder="Last name"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        className="h-11"
-                                    />
-                                </div>
-                            </div>
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400"
+                >
+                  {error}
+                </motion.div>
+              )}
 
-                            {/* Email */}
-                            <div className="space-y-2">
-                                <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Email
-                                </label>
-                                <Input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    placeholder="Email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                    className="h-11"
-                                />
-                            </div>
+              {/* Register Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Name Fields */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="name"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      {t('auth.register.firstName')}
+                    </label>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="John"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="lastName"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {t('auth.register.lastName')}
+                    </label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      placeholder="Doe"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                      disabled={loading}
+                    />
+                  </div>
+                </motion.div>
 
-                            {/* Password */}
-                            <div className="space-y-2">
-                                <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Password
-                                </label>
-                                <Input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="Enter your password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    className="h-11"
-                                />
-                            </div>
+                {/* Email Field */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-2"
+                >
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    {t('auth.register.email')}
+                  </label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                    disabled={loading}
+                  />
+                </motion.div>
 
-                            {/* Confirm Password */}
-                            <div className="space-y-2">
-                                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Confirm Password
-                                </label>
-                                <Input
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    type="password"
-                                    placeholder="Confirm your password"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    required
-                                    className="h-11"
-                                />
-                            </div>
+                {/* Phone Field */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="space-y-2"
+                >
+                  <label
+                    htmlFor="phone"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {t('auth.register.phone')}
+                  </label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="+91 9876543210"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                    disabled={loading}
+                  />
+                </motion.div>
 
-                            {/* Terms & Conditions */}
-                            <div className="flex items-start gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="terms"
-                                    checked={agreedToTerms}
-                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                />
-                                <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400">
-                                    I agree to the{' '}
-                                    <Link href="/terms" className="text-primary-600 hover:underline">
-                                        Terms & Conditions
-                                    </Link>
-                                </label>
-                            </div>
+                {/* Password Field */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="space-y-2"
+                >
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t('auth.register.password')}
+                  </label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                    disabled={loading}
+                  />
+                </motion.div>
 
-                            {/* Submit Button */}
-                            <Button
-                                type="submit"
-                                className="w-full h-12 text-base font-medium bg-primary-600 hover:bg-primary-700"
-                                disabled={loading || !agreedToTerms}
-                            >
-                                {loading ? <Loader size="sm" /> : 'Create account'}
-                            </Button>
+                {/* Confirm Password Field */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="space-y-2"
+                >
+                  <label
+                    htmlFor="confirmPassword"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t('auth.register.confirmPassword')}
+                  </label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="h-12 bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-primary-500 dark:focus:border-primary-400"
+                    disabled={loading}
+                  />
+                </motion.div>
 
-                            {/* Note */}
-                            <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-                                Note: You'll get 1 free mock test. Subscribe for unlimited access.
-                            </p>
-                        </form>
-                    </div>
-                </div>
+                {/* Terms & Conditions */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="flex items-start gap-3"
+                >
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    disabled={loading}
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    {t('auth.register.agreeTerms')}{' '}
+                    <Link
+                      href="/terms"
+                      className="text-primary-600 dark:text-primary-400 hover:underline"
+                    >
+                      Terms & Conditions
+                    </Link>
+                  </label>
+                </motion.div>
+
+                {/* Submit Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                >
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base font-medium bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    disabled={loading || !agreedToTerms}
+                  >
+                    {loading ? (
+                      <Loader size="sm" />
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        {t('auth.register.submit')}
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    )}
+                  </Button>
+                </motion.div>
+
+                {/* Sign In Link */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                  className="text-center pt-4"
+                >
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('auth.register.haveAccount')}{' '}
+                    <Link
+                      href="/auth/login"
+                      className="text-primary-600 dark:text-primary-400 hover:underline font-medium inline-flex items-center gap-1"
+                    >
+                      {t('auth.register.signIn')}
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </p>
+                </motion.div>
+              </form>
             </div>
-        </div>
-    )
+          </div>
+        </motion.div>
+      </main>
+    </div>
+  );
 }

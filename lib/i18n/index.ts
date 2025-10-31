@@ -147,6 +147,28 @@ export interface TranslationKeys {
   'footer.support': string;
   'footer.legal': string;
   
+  // Auth
+  'auth.login.title': string;
+  'auth.login.subtitle': string;
+  'auth.login.email': string;
+  'auth.login.password': string;
+  'auth.login.submit': string;
+  'auth.login.forgotPassword': string;
+  'auth.login.noAccount': string;
+  'auth.login.createAccount': string;
+  'auth.register.title': string;
+  'auth.register.subtitle': string;
+  'auth.register.firstName': string;
+  'auth.register.lastName': string;
+  'auth.register.email': string;
+  'auth.register.password': string;
+  'auth.register.confirmPassword': string;
+  'auth.register.phone': string;
+  'auth.register.agreeTerms': string;
+  'auth.register.submit': string;
+  'auth.register.haveAccount': string;
+  'auth.register.signIn': string;
+  
   // Common
   'common.learnMore': string;
   'common.getStarted': string;
@@ -308,6 +330,28 @@ const translations: Translations = {
     'footer.support': 'Support',
     'footer.legal': 'Legal',
     
+    // Auth
+    'auth.login.title': 'Welcome back',
+    'auth.login.subtitle': 'Login to your account to continue your journey',
+    'auth.login.email': 'Email',
+    'auth.login.password': 'Password',
+    'auth.login.submit': 'Login',
+    'auth.login.forgotPassword': 'Forgot password?',
+    'auth.login.noAccount': "Don't have an account?",
+    'auth.login.createAccount': 'Create account',
+    'auth.register.title': 'Create your account',
+    'auth.register.subtitle': 'Start your journey to interview success',
+    'auth.register.firstName': 'First name',
+    'auth.register.lastName': 'Last name',
+    'auth.register.email': 'Email',
+    'auth.register.password': 'Password',
+    'auth.register.confirmPassword': 'Confirm password',
+    'auth.register.phone': 'Phone number',
+    'auth.register.agreeTerms': 'I agree to the Terms & Conditions',
+    'auth.register.submit': 'Create account',
+    'auth.register.haveAccount': 'Already have an account?',
+    'auth.register.signIn': 'Sign in',
+    
     // Common
     'common.learnMore': 'Learn More',
     'common.getStarted': 'Get Started',
@@ -465,6 +509,28 @@ const translations: Translations = {
     'footer.support': 'समर्थन',
     'footer.legal': 'कानूनी',
     
+    // Auth
+    'auth.login.title': 'वापसी पर स्वागत है',
+    'auth.login.subtitle': 'अपनी यात्रा जारी रखने के लिए अपने खाते में लॉगिन करें',
+    'auth.login.email': 'ईमेल',
+    'auth.login.password': 'पासवर्ड',
+    'auth.login.submit': 'लॉगिन',
+    'auth.login.forgotPassword': 'पासवर्ड भूल गए?',
+    'auth.login.noAccount': 'खाता नहीं है?',
+    'auth.login.createAccount': 'खाता बनाएं',
+    'auth.register.title': 'अपना खाता बनाएं',
+    'auth.register.subtitle': 'इंटरव्यू सफलता की अपनी यात्रा शुरू करें',
+    'auth.register.firstName': 'पहला नाम',
+    'auth.register.lastName': 'अंतिम नाम',
+    'auth.register.email': 'ईमेल',
+    'auth.register.password': 'पासवर्ड',
+    'auth.register.confirmPassword': 'पासवर्ड की पुष्टि करें',
+    'auth.register.phone': 'फ़ोन नंबर',
+    'auth.register.agreeTerms': 'मैं नियम और शर्तों से सहमत हूं',
+    'auth.register.submit': 'खाता बनाएं',
+    'auth.register.haveAccount': 'पहले से खाता है?',
+    'auth.register.signIn': 'साइन इन करें',
+    
     // Common
     'common.learnMore': 'और जानें',
     'common.getStarted': 'शुरू करें',
@@ -621,6 +687,28 @@ const translations: Translations = {
     'footer.company': 'କମ୍ପାନୀ',
     'footer.support': 'ସମର୍ଥନ',
     'footer.legal': 'ଆଇନଗତ',
+    
+    // Auth
+    'auth.login.title': 'ପୁଣି ସ୍ୱାଗତ',
+    'auth.login.subtitle': 'ଆପଣଙ୍କର ଯାତ୍ରା ଜାରି ରଖିବା ପାଇଁ ଆପଣଙ୍କର ଖାତାରେ ଲଗଇନ୍ କରନ୍ତୁ',
+    'auth.login.email': 'ଇମେଲ୍',
+    'auth.login.password': 'ପାସୱାର୍ଡ',
+    'auth.login.submit': 'ଲଗଇନ୍',
+    'auth.login.forgotPassword': 'ପାସୱାର୍ଡ ଭୁଲି ଯାଇଛନ୍ତି?',
+    'auth.login.noAccount': 'ଖାତା ନାହିଁ?',
+    'auth.login.createAccount': 'ଖାତା ତିଆରି କରନ୍ତୁ',
+    'auth.register.title': 'ଆପଣଙ୍କର ଖାତା ତିଆରି କରନ୍ତୁ',
+    'auth.register.subtitle': 'ସାକ୍ଷାତକାର ସଫଳତାର ଆପଣଙ୍କର ଯାତ୍ରା ଆରମ୍ଭ କରନ୍ତୁ',
+    'auth.register.firstName': 'ପ୍ରଥମ ନାମ',
+    'auth.register.lastName': 'ଶେଷ ନାମ',
+    'auth.register.email': 'ଇମେଲ୍',
+    'auth.register.password': 'ପାସୱାର୍ଡ',
+    'auth.register.confirmPassword': 'ପାସୱାର୍ଡ ନିଶ୍ଚିତ କରନ୍ତୁ',
+    'auth.register.phone': 'ଫୋନ୍ ନମ୍ବର',
+    'auth.register.agreeTerms': 'ମୁଁ ନିୟମ ଏବଂ ଶର୍ତ୍ତଗୁଡିକରେ ସହମତ',
+    'auth.register.submit': 'ଖାତା ତିଆରି କରନ୍ତୁ',
+    'auth.register.haveAccount': 'ପୂର୍ବରୁ ଖାତା ଅଛି?',
+    'auth.register.signIn': 'ସାଇନ୍ ଇନ୍ କରନ୍ତୁ',
     
     // Common
     'common.learnMore': 'ଅଧିକ ଜାଣନ୍ତୁ',
