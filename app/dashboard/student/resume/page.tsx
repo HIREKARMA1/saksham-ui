@@ -17,10 +17,6 @@ import {
     AlertCircle, 
     X,
     BarChart,
-    Home,
-    User,
-    Briefcase,
-    ClipboardList,
     TrendingUp,
     Download,
     RefreshCw,
@@ -32,14 +28,7 @@ import {
 import { motion } from 'framer-motion'
 import { Textarea } from '@/components/ui/textarea'
 import { AxiosError } from 'axios'
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
@@ -242,7 +231,7 @@ export default function ResumePage() {
 
     if (loadingStatus) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex justify-center py-12">
                     <Loader size="lg" />
                 </div>
@@ -251,44 +240,23 @@ export default function ResumePage() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
-            <div className="space-y-6">
-                {/* Header - Matching Dashboard Style */}
-                <motion.div 
-                    className="relative overflow-hidden rounded-2xl p-8 text-gray-900 dark:text-white border bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 group"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    whileHover={{ scale: 1.01 }}
-                >
-                    {/* Decorative corners */}
-                    <div className="pointer-events-none absolute -top-12 -right-12 w-56 h-56 rotate-45 bg-gradient-to-br from-primary-100/40 to-secondary-100/30 dark:from-primary-900/30 dark:to-secondary-900/20" />
-                    <div className="pointer-events-none absolute -bottom-14 -left-14 w-64 h-64 rounded-full bg-gradient-to-tr from-secondary-100/30 to-accent-100/20 dark:from-secondary-900/20 dark:to-accent-900/10" />
-                    
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <motion.div 
-                                className="p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                                animate={{ rotate: [0, 360] }}
-                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                            >
-                                <Sparkles className="h-6 w-6" />
-                            </motion.div>
-                            <motion.h1 
-                                className="text-4xl font-bold gradient-text"
-                                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                                transition={{ duration: 3, repeat: Infinity }}
-                                style={{ backgroundSize: '200% 200%' }}
-                            >
-                                <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Resume</span>
-                                <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent"> Management</span>
-                            </motion.h1>
-                        </div>
-                        <p className="text-lg text-gray-600 dark:text-gray-300">
-                            Upload your resume and get instant AI-powered ATS score analysis
+        <DashboardLayout requiredUserType="student">
+            {/* Background with same style as home page */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 gradient-bg">
+                    <AnimatedBackground variant="default" />
+                </div>
+            </div>
+            
+            {/* Content with margin-top */}
+            <div className="relative z-10 mt-20 space-y-6">
+                    {/* Header */}
+                    <div>
+                        <h1 className="text-3xl font-bold">Resume Management</h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Upload your resume and get instant ATS score analysis
                         </p>
                     </div>
-                </motion.div>
 
                 {/* ✅ NEW: Existing Resume Card */}
                 {resumeStatus?.has_resume && !showUploadSection && (

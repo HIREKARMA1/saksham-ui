@@ -12,13 +12,6 @@ import { Home, Users, Building2, BarChart3, Plus, Search, Pencil, Trash2, Upload
 import toast from 'react-hot-toast'
 import { BulkUploadModal } from '@/components/BulkUploadModal'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/admin', icon: Home },
-    { name: 'Colleges', href: '/dashboard/admin/colleges', icon: Building2 },
-    { name: 'Students', href: '/dashboard/admin/students', icon: Users },
-    { name: 'Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/dashboard/admin/profile', icon: Users },
-]
 
 export default function AdminColleges() {
     const [colleges, setColleges] = useState<any[]>([])
@@ -546,7 +539,7 @@ export default function AdminColleges() {
     )
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="admin">
+        <DashboardLayout requiredUserType="admin">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">

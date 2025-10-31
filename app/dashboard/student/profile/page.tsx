@@ -11,14 +11,6 @@ import { Home, User, FileText, Briefcase, ClipboardList, Zap, Sparkles, Save } f
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
-
 export default function StudentProfile() {
     const [profile, setProfile] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -56,7 +48,7 @@ export default function StudentProfile() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+        <DashboardLayout requiredUserType="student">
             <div className="space-y-6">
                 {/* Header - Matching Dashboard Style */}
                 <motion.div 

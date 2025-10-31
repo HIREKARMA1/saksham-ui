@@ -7,13 +7,6 @@ import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
 import { Home, Users, GraduationCap, BarChart3 } from 'lucide-react'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/college', icon: Home },
-    { name: 'Students', href: '/dashboard/college/students', icon: GraduationCap },
-    { name: 'Analytics', href: '/dashboard/college/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/dashboard/college/profile', icon: Users },
-]
-
 export default function CollegeDashboard() {
     const [stats, setStats] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -34,7 +27,7 @@ export default function CollegeDashboard() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="college">
+        <DashboardLayout requiredUserType="college">
             <div className="space-y-6">
                 {/* Welcome Section */}
                 <div>

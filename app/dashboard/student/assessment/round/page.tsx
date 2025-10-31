@@ -50,12 +50,6 @@ const extractErrorMessage = (error: any): string => {
     return error.message || 'An error occurred'
 }
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-]
 
 // Default labels by round number (used only as a fallback)
 const roundNames = {
@@ -676,7 +670,7 @@ export default function AssessmentRoundPage() {
 
     if (loading) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="flex justify-center items-center min-h-screen">
                     <div className="text-center max-w-lg px-6">
                         <Loader size="lg" />
@@ -701,69 +695,64 @@ export default function AssessmentRoundPage() {
         // Ensure we have valid roundData with round_id before rendering
         if (!roundData || (!roundData.round_id && !roundData.id)) {
             return (
-                <div className="flex justify-center items-center min-h-screen">
-                    <div className="text-center max-w-lg px-6">
-                        <Loader size="lg" />
-                        <h2 className="mt-6 text-2xl font-bold text-gray-900 dark:text-white">
-                            Loading Group Discussion
-                        </h2>
-                        <p className="mt-3 text-gray-600 dark:text-gray-400">
-                            Preparing your discussion round...
-                        </p>
+                <DashboardLayout requiredUserType="student">
+                    <div className="flex justify-center items-center min-h-screen">
+                        <div className="text-center max-w-lg px-6">
+                            <Loader size="lg" />
+                            <h2 className="mt-6 text-2xl font-bold text-gray-900 dark:text-white">
+                                Loading Group Discussion
+                            </h2>
+                            <p className="mt-3 text-gray-600 dark:text-gray-400">
+                                Preparing your discussion round...
+                            </p>
+                        </div>
                     </div>
-                </div>
+                </DashboardLayout>
             )
         }
         
         return (
-            <div className="min-h-screen bg-gray-100">
-                <div className="bg-blue-600 text-white p-4">
-                    <div className="flex justify-between items-center w-full px-6">
-                        <h1 className="text-xl font-semibold">Round {roundNumber}: Group Discussion</h1>
-                        <div className="text-sm">Time Left: {formatTime(timeLeft)}</div>
-                    </div>
-                </div>
-                <div className="max-w-7xl mx-auto p-6">
-                    <GroupDiscussionRound
-                        roundId={roundData.round_id || roundData.id}
-                        assessmentId={assessmentId!}
-                        onComplete={async (responses) => {
-                            try {
-                                setSubmitting(true);
-                                await apiClient.submitRoundResponses(
-                                    assessmentId!,
-                                    roundData.round_id || roundData.id,
-                                    responses.map(response => ({
-                                        response_text: response.response_text,
-                                        time_taken: response.time_taken || 0,
-                                        score: response.score || 0
-                                    }))
-                                );
-                                toast.success('Discussion round completed successfully!');
-                                router.push(`/dashboard/student/assessment?id=${assessmentId}`);
-                            } catch (error) {
-                                console.error('Error submitting discussion responses:', error);
-                                toast.error('Failed to submit discussion responses');
-                                setSubmitting(false);
-                            }
-                        }}
-                    />
-                </div>
-            </div>
+            <DashboardLayout requiredUserType="student">
+                <GroupDiscussionRound
+                    roundId={roundData.round_id || roundData.id}
+                    assessmentId={assessmentId!}
+                    onComplete={async (responses) => {
+                        try {
+                            setSubmitting(true);
+                            await apiClient.submitRoundResponses(
+                                assessmentId!,
+                                roundData.round_id || roundData.id,
+                                responses.map(response => ({
+                                    response_text: response.response_text,
+                                    time_taken: response.time_taken || 0,
+                                    score: response.score || 0
+                                }))
+                            );
+                            toast.success('Discussion round completed successfully!');
+                            router.push(`/dashboard/student/assessment?id=${assessmentId}`);
+                        } catch (error) {
+                            console.error('Error submitting discussion responses:', error);
+                            toast.error('Failed to submit discussion responses');
+                            setSubmitting(false);
+                        }
+                    }}
+                />
+            </DashboardLayout>
         );
     }
 
     // Coding Round UI
     if (isCodingRound) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                {/* Sticky Exam Header */}
-                <div className="bg-blue-600 text-white sticky top-0 z-20 shadow">
-                    <div className="w-full px-6 py-4 flex items-center justify-between">
-                        <h1 className="text-lg md:text-xl font-semibold">Round {roundNumber}: Coding Challenge</h1>
-                        <div className="text-sm md:text-base font-medium">Time Left: {formatTime(timeLeft)}</div>
+            <DashboardLayout requiredUserType="student">
+                <div className="min-h-screen bg-gray-100">
+                    {/* Header */}
+                    <div className="bg-indigo-600 text-white p-4">
+                        <div className="flex justify-between items-center max-w-7xl mx-auto">
+                            <h1 className="text-xl font-semibold">Round {roundNumber}: Coding Challenge</h1>
+                            <div className="text-sm">Time Left: {formatTime(timeLeft)}</div>
+                        </div>
                     </div>
-                </div>
 
                 {/* Full-height Coding Workspace */}
                 <div className="flex-1 overflow-hidden">
@@ -787,7 +776,7 @@ export default function AssessmentRoundPage() {
 
     if (!roundData || (!isGroupDiscussionRound && (!roundData.questions || roundData.questions.length === 0))) {
         return (
-            <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+            <DashboardLayout requiredUserType="student">
                 <div className="text-center py-12">
                     <h2 className="text-2xl font-bold mb-4">No Questions Available</h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -814,22 +803,31 @@ export default function AssessmentRoundPage() {
         const liveBorder = isHR ? 'border-orange-300' : 'border-blue-300'
         const liveText = isHR ? 'text-orange-600' : 'text-blue-600'
         return (
-            <div className={`min-h-screen flex flex-col bg-gradient-to-br ${pageBg}`}>
-                {/* Gradient Exam Header using landing colors */}
-                <div className={`sticky top-0 z-20 bg-gradient-to-r ${headerGradient} text-white shadow`}>
-                    <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight">{headerTitle}</h1>
-                            <p className="text-sm text-blue-100">Question {currentQuestion + 1} of {roundData?.questions?.length || 0}</p>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-lg font-semibold">⏱️ {formatTime(timeLeft)}</div>
-                            {timeLeft !== null && timeLeft <= 60 && timeLeft > 0 && (
-                                <span className="text-yellow-300 font-bold animate-pulse text-xs">Last minute!</span>
-                            )}
+            <DashboardLayout requiredUserType="student">
+                <div className="h-[calc(100vh-64px)] flex flex-col bg-gradient-to-br from-blue-50 to-purple-50">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 shadow-lg">
+                        <div className="flex justify-between items-center max-w-7xl mx-auto">
+                            <div>
+                                <h1 className="text-2xl font-bold">
+                                    {roundNumber === 4 ? '💻 Technical Interview' : '👔 HR Interview'}
+                                </h1>
+                                <p className="text-sm text-blue-100 mt-1">
+                                    Question {currentQuestion + 1} of {roundData?.questions?.length || 0}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-lg font-semibold">
+                                    ⏱️ {formatTime(timeLeft)}
+                                </div>
+                                {timeLeft !== null && timeLeft <= 60 && timeLeft > 0 && (
+                                    <span className="text-yellow-300 font-bold animate-pulse text-sm">
+                                        Last minute!
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
 
                 {/* Chat Area */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-6">

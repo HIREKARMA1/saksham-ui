@@ -17,14 +17,7 @@ import {
 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { cn } from '@/lib/utils'
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-]
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 interface JobApplication {
     id: string
@@ -210,8 +203,16 @@ export default function AutoJobApplyPage() {
     }
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
-            <div className="space-y-6">
+        <DashboardLayout requiredUserType="student">
+            {/* Background with same style as home page */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 gradient-bg">
+                    <AnimatedBackground variant="default" />
+                </div>
+            </div>
+            
+            {/* Content with margin-top */}
+            <div className="relative z-10 mt-20 space-y-6">
                 {/* Header */}
                 <div className="relative overflow-hidden rounded-2xl p-6 md:p-8 bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 border">
                     {/* decorative corner */}
