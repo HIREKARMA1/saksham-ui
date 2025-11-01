@@ -12,12 +12,6 @@ import { Home, Users, GraduationCap, BarChart3, Plus, Search, Pencil, Trash2, Up
 import toast from 'react-hot-toast'
 import { BulkUploadModal } from '@/components/BulkUploadModal'
 
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/college', icon: Home },
-    { name: 'Students', href: '/dashboard/college/students', icon: GraduationCap },
-    { name: 'Analytics', href: '/dashboard/college/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/dashboard/college/profile', icon: Users },
-]
 
 export default function CollegeStudents() {
     const [students, setStudents] = useState<any[]>([])
@@ -227,7 +221,7 @@ export default function CollegeStudents() {
     const inactiveCount = students.filter(s => s.status?.toUpperCase() === 'INACTIVE').length
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems}>
+        <DashboardLayout requiredUserType="college">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
