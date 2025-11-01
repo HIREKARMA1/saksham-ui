@@ -280,8 +280,8 @@ export function GroupDiscussionRound({
             // STEP 1: Save full conversation transcript via API
             const submitPayload = [{
                 response_text: JSON.stringify({
-                    turns: gdTurns,  // Complete conversation history
-                    responses: gdResponses  // Legacy format kept for compatibility
+                    turns: gdTurns,
+                    responses: gdResponses
                 }),
                 score: 0,
                 time_taken: 0
@@ -294,26 +294,26 @@ export function GroupDiscussionRound({
                 payloadSize: JSON.stringify(submitPayload[0].response_text).length
             });
 
-            const submitRes = await apiClient.submitRoundResponses(
-                assessmentId,
-                roundId,
-                submitPayload
-            );
-            console.log('GD submit result', submitRes);
+            try {
+                const submitRes = await apiClient.submitRoundResponses(
+                    assessmentId,
+                    roundId,
+                    submitPayload
+                );
+                console.log('GD submit result', submitRes);
+            } catch (saveErr) {
+                console.warn('GD transcript save failed, proceeding to evaluation anyway:', saveErr);
+                // Don't rethrow; evaluation endpoint can work from provided conversation
+            }
             
             // STEP 2: Call evaluate endpoint to complete the round and get score
             try {
                 toast.loading('Evaluating your discussion...', { id: 'evaluating' });
-                
                 const evalResponse = await apiClient.client.post(`/assessments/rounds/${roundId}/evaluate-discussion`, {
-                    conversation: gdTurns  // Send complete conversation to backend
+                    conversation: gdTurns
                 });
-                
                 console.log('Evaluation complete:', evalResponse.data);
-                
-                // Wait a moment to ensure database commit is complete
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
                 toast.dismiss('submitting');
                 toast.dismiss('evaluating');
                 toast.success('Discussion evaluated successfully!', { duration: 3000 });
@@ -324,7 +324,6 @@ export function GroupDiscussionRound({
             }
             
             // Redirect to assessment page and force a fresh fetch of statuses
-            // Using full navigation avoids stale state when returning to the same route
             setTimeout(() => {
                 window.location.href = `/dashboard/student/assessment?id=${assessmentId}&ts=${Date.now()}`;
             }, 1500);
