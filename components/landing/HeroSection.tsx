@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 import { Button } from '@/components/ui/button';
 import { AnimatedBackground } from '@/components/ui/animated-background';
+import { VideoModal } from '@/components/ui/video-modal';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,7 +17,10 @@ export function HeroSection() {
   const { t } = useTranslation();
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const fullText = t('hero.title');
+  
+  const DEMO_VIDEO_URL = 'https://solviqai.s3.ap-south-1.amazonaws.com/SolviqDemo.mp4';
 
   useEffect(() => {
     if (currentIndex < fullText.length) {
@@ -140,10 +144,7 @@ export function HeroSection() {
               size="lg"
               variant="outline"
               className="border-2 border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-lg px-8 py-6 rounded-xl transition-all"
-              onClick={() => {
-                const element = document.getElementById('features');
-                element?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => setIsVideoModalOpen(true)}
             >
               {t('hero.cta.secondary')}
             </Button>
@@ -185,6 +186,14 @@ export function HeroSection() {
           />
         </motion.div>
       </motion.div>
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        videoUrl={DEMO_VIDEO_URL}
+        title="Solviq AI Demo"
+      />
     </section>
   );
 }
