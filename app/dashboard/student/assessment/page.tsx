@@ -17,7 +17,6 @@ import {
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
-<<<<<<< HEAD
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
     { name: 'Profile', href: '/dashboard/student/profile', icon: User },
@@ -26,8 +25,6 @@ const sidebarItems = [
     { name: 'Analytics', href: '/dashboard/student/analytics', icon: BarChart3 },
 ]
 
-=======
->>>>>>> 1e69468aec3a5fcd5d9a18513de8a7475f84e1aa
 // Round display information
 const roundDisplay: Record<string, { name: string; description: string; duration: string; icon: any; color: string }> = {
     aptitude: {

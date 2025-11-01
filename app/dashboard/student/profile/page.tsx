@@ -7,25 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-<<<<<<< HEAD
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, BarChart3 } from 'lucide-react'
-import toast from 'react-hot-toast'
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-    { name: 'Analytics', href: '/dashboard/student/analytics', icon: BarChart3 },
-]
-
-=======
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, Sparkles, Save } from 'lucide-react'
+import { Home, User, FileText, Briefcase, ClipboardList, Zap, BarChart3, Sparkles, Save } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-
->>>>>>> 1e69468aec3a5fcd5d9a18513de8a7475f84e1aa
 export default function StudentProfile() {
     const [profile, setProfile] = useState<any>(null)
     const [loading, setLoading] = useState(true)

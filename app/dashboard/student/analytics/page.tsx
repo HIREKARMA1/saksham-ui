@@ -112,7 +112,7 @@ export default function StudentAnalyticsPage() {
     const weeklyActivity = data?.weekly_activity || []
 
     return (
-        <DashboardLayout sidebarItems={sidebarItems} requiredUserType="student">
+        <DashboardLayout requiredUserType="student">
             {loading ? (
                 <div className="w-full flex items-center justify-center py-24">
                     <Loader />

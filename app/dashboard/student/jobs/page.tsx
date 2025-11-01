@@ -31,7 +31,7 @@ import {
 import { AxiosError } from 'axios'
 import Link from 'next/link'
 import { toast } from 'sonner'
-<<<<<<< HEAD
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
@@ -41,9 +41,6 @@ const sidebarItems = [
     { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
     { name: 'Analytics', href: '/dashboard/student/analytics', icon: BarChart3 },
 ]
-=======
-import { AnimatedBackground } from '@/components/ui/animated-background'
->>>>>>> 1e69468aec3a5fcd5d9a18513de8a7475f84e1aa
 
 interface JobRecommendation {
     rank: number

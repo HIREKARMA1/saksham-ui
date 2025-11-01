@@ -7,13 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader } from '@/components/ui/loader'
 import { apiClient } from '@/lib/api'
-<<<<<<< HEAD
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users, BarChart3 } from 'lucide-react'
-import dynamic from 'next/dynamic'
-=======
-import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users, Sparkles } from 'lucide-react'
+import { Home, User, FileText, Briefcase, ClipboardList, Zap, Target, TrendingUp, Award, Users, BarChart3, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
->>>>>>> 1e69468aec3a5fcd5d9a18513de8a7475f84e1aa
 import Link from 'next/link'
 import { 
     ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, 
@@ -21,31 +16,6 @@ import {
     ComposedChart, Area, LabelList
 } from 'recharts'
 
-<<<<<<< HEAD
-// Lazy-load Recharts on client only
-const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
-const LineChart = dynamic(() => import('recharts').then(m => m.LineChart), { ssr: false })
-const Line = dynamic(() => import('recharts').then(m => m.Line), { ssr: false })
-const CartesianGrid = dynamic(() => import('recharts').then(m => m.CartesianGrid), { ssr: false })
-const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false })
-const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false })
-const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip as any), { ssr: false })
-const Legend = dynamic(() => import('recharts').then(m => m.Legend as any), { ssr: false })
-const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
-const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
-const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
-const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
-const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
-
-const sidebarItems = [
-    { name: 'Dashboard', href: '/dashboard/student', icon: Home },
-    { name: 'Profile', href: '/dashboard/student/profile', icon: User },
-    { name: 'Resume', href: '/dashboard/student/resume', icon: FileText },
-    { name: 'Job Recommendations', href: '/dashboard/student/jobs', icon: Briefcase },
-    { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
-    { name: 'Analytics', href: '/dashboard/student/analytics' , icon: BarChart3 },
-]
-=======
 // Hover-enabled stat card component
 function StatCard({ icon: Icon, label, value, color, bgColor, colorClass }: { icon: any, label: string, value: string | number, color: string, bgColor: string, colorClass: string }) {
     const [isHovered, setIsHovered] = useState(false)
@@ -156,7 +126,6 @@ function StatCard({ icon: Icon, label, value, color, bgColor, colorClass }: { ic
         </motion.div>
     )
 }
->>>>>>> 1e69468aec3a5fcd5d9a18513de8a7475f84e1aa
 
 export default function StudentDashboard() {
     const [stats, setStats] = useState<any>(null)

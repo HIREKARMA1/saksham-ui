@@ -13,10 +13,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
     Briefcase, Home, User, FileText, Zap, Settings, CheckCircle, 
     XCircle, Clock, TrendingUp, AlertCircle, Loader2, Eye, Play,
-<<<<<<< HEAD
     RefreshCw, Download, BarChart3
 } from 'lucide-react'
 import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 const sidebarItems = [
     { name: 'Dashboard', href: '/dashboard/student', icon: Home },
@@ -26,13 +27,6 @@ const sidebarItems = [
     { name: 'Auto Job Apply', href: '/dashboard/student/auto-apply', icon: Zap },
     { name: 'Analytics', href: '/dashboard/student/analytics', icon: BarChart3 },
 ]
-=======
-    RefreshCw
-} from 'lucide-react'
-import { apiClient } from '@/lib/api'
-import { cn } from '@/lib/utils'
-import { AnimatedBackground } from '@/components/ui/animated-background'
->>>>>>> 1e69468aec3a5fcd5d9a18513de8a7475f84e1aa
 
 interface JobApplication {
     id: string
