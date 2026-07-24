@@ -42,8 +42,11 @@ export function PlacementDriveCard({
   const visibleStages = stages.slice(0, MAX_VISIBLE_STAGES);
   const hiddenCount = Math.max(0, stages.length - MAX_VISIBLE_STAGES);
   const totalSeconds = sumStageDurationSeconds(stages);
-  const tags = Array.isArray(drive.tags) && drive.tags.length > 0
-    ? drive.tags
+  const stringTags = Array.isArray(drive.tags)
+    ? drive.tags.filter((t): t is string => typeof t === 'string')
+    : [];
+  const tags = stringTags.length > 0
+    ? stringTags
     : drive.target_role
       ? [drive.target_role]
       : [];

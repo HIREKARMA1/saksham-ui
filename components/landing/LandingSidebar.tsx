@@ -62,6 +62,18 @@ export const studentSidebarFeatures: SidebarItem[] = [
     label: "Resume Analysis",
     onClick: undefined, // Will be set by component
   },
+  {
+    id: "resume-agent",
+    icon: <Sparkles className="w-5 h-5" />,
+    label: "Resume Agent POC",
+    onClick: undefined,
+  },
+  {
+    id: "drive-day",
+    icon: <Layers className="w-5 h-5" />,
+    label: "Drive Day POC",
+    onClick: undefined,
+  },
   // {
   //   id: "assessment",
   //   icon: <ClipboardList className="w-5 h-5" />,

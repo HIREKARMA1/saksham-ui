@@ -50,6 +50,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Textarea } from "@/components/ui/textarea";
 import { AxiosError } from "axios";
 import SubscriptionRequiredModal from "@/components/subscription/SubscriptionRequiredModal";
+import { ResumeRetargetChat } from "@/components/resume/ResumeRetargetChat";
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard/student", icon: Home },
@@ -337,6 +338,7 @@ export default function ResumePage() {
   // Resume status
   const [resumeStatus, setResumeStatus] = useState<ResumeStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [activeResumeVersionId, setActiveResumeVersionId] = useState<string | null>(null);
   const [showUploadSection, setShowUploadSection] = useState(false);
   const [isDeletingResume, setIsDeletingResume] = useState(false);
 
@@ -454,6 +456,13 @@ export default function ResumePage() {
         setCurrentStep(1);
       } else {
         setCurrentStep(1); // Keep at step 1 until they hit calculate
+        try {
+          const versions = await apiClient.getResumeGapVersions();
+          const active = (versions.versions || []).find((v: { is_active?: boolean }) => v.is_active);
+          setActiveResumeVersionId(active?.id || versions.versions?.[0]?.id || null);
+        } catch {
+          setActiveResumeVersionId(null);
+        }
       }
     } catch (error) {
       console.error("Error fetching resume status:", error);
@@ -1116,6 +1125,17 @@ export default function ResumePage() {
                         </>
                       )}
                     </Button>
+
+                    {(resumeStatus?.has_resume || uploadSuccess) && (
+                      <div className="mt-4">
+                        <ResumeRetargetChat
+                          activeResumeVersionId={activeResumeVersionId}
+                          onLocked={() => {
+                            void fetchResumeStatus();
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -12,6 +12,9 @@ import { Mic, MicOff, Volume2, Send } from 'lucide-react';
 
 type Props = {
   persona: 'technical' | 'hr' | 'culture_fit';
+  /** Named consistent interviewer (Drive Day presence) */
+  personaName?: string;
+  personaTitle?: string;
   targetRole: string;
   company?: string;
   jobDescription?: string;
@@ -32,6 +35,8 @@ type Props = {
 
 export function MockInterviewRoom({
   persona,
+  personaName,
+  personaTitle,
   targetRole,
   company,
   jobDescription,
@@ -298,7 +303,13 @@ export function MockInterviewRoom({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge>{persona === 'technical' ? 'Technical' : 'HR'} Interview</Badge>
+        <Badge>
+          {personaName
+            ? `${personaName}${personaTitle ? ` · ${personaTitle}` : ''}`
+            : persona === 'technical'
+              ? 'Technical Interview'
+              : 'HR Interview'}
+        </Badge>
         <Badge variant="outline">
           Turn {turnCount}/{maxTurns}
         </Badge>

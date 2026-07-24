@@ -15,6 +15,7 @@ import { SimulationGroupDiscussion } from '@/components/simulation/SimulationGro
 import { SimulationSalesRoleplay } from '@/components/simulation/SimulationSalesRoleplay';
 import { SimulationWrittenStage } from '@/components/simulation/SimulationWrittenStage';
 import { ExamFocusShell } from '@/components/exam/ExamFocusShell';
+import { DriveDayPresenceStage, type PresenceKind } from '@/components/placement-drive/DriveDayPresenceStage';
 import { useExamCamera } from '@/hooks/useExamCamera';
 import { useProctorSnapshots } from '@/hooks/useProctorSnapshots';
 import { isEmbeddedExamStage } from '@/lib/examStageTypes';
@@ -39,7 +40,9 @@ export default function PlacementDriveRunPage() {
   const [loading, setLoading] = useState(true);
   const [startingMcq, setStartingMcq] = useState(false);
   const [phase, setPhase] = useState<DrivePhase>('camera_setup');
+  const [presenceBusy, setPresenceBusy] = useState(false);
   const examCamera = useExamCamera();
+  const mcqAutoStartedRef = useRef<string | null>(null);
 
   const serverCapturedIndexes = useMemo(() => {
     const snaps = attempt?.proctoring_snapshots;
@@ -160,6 +163,28 @@ export default function PlacementDriveRunPage() {
 
   const onStageComplete = (updated: any) => setAttempt(updated);
 
+  const completePresenceStage = useCallback(async () => {
+    if (!attemptId || !attempt) return;
+    const idx = attempt.current_stage_index;
+    if (typeof idx !== 'number') return;
+    setPresenceBusy(true);
+    try {
+      const updated = await apiClient.completePlacementDriveStage(attemptId, {
+        stage_index: idx,
+        score: 100,
+        metadata: {
+          stage_type: attempt.stage_runner?.stage_type || attempt.current_stage?.stage_type,
+          presence: true,
+        },
+      });
+      setAttempt(updated);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Could not continue Drive Day');
+    } finally {
+      setPresenceBusy(false);
+    }
+  }, [attemptId, attempt]);
+
   const onInterviewComplete = useCallback(async (result: {
     overall_score: number;
     report?: any;
@@ -233,6 +258,29 @@ export default function PlacementDriveRunPage() {
       void exitExamFullscreen();
     }
   }, [attempt?.status]);
+
+  // Immersive Drive Day: no MCQ lobby — enter the hall immediately.
+  useEffect(() => {
+    if (phase !== 'active' || !attemptId || !attempt) return;
+    const immersiveDrive = Boolean(attempt.immersive || attempt.template?.immersive);
+    if (!immersiveDrive || attempt.status !== 'IN_PROGRESS') return;
+    const runnerType = attempt.stage_runner?.type;
+    if (runnerType !== 'mcq') return;
+    const key = `${attemptId}:${attempt.current_stage_index}`;
+    if (mcqAutoStartedRef.current === key || startingMcq) return;
+    mcqAutoStartedRef.current = key;
+    void startMcqStage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    phase,
+    attemptId,
+    attempt?.immersive,
+    attempt?.template?.immersive,
+    attempt?.stage_runner?.type,
+    attempt?.current_stage_index,
+    attempt?.status,
+    startingMcq,
+  ]);
 
   if (loading) {
     return (
@@ -342,6 +390,13 @@ export default function PlacementDriveRunPage() {
   const runner = attempt.stage_runner || {};
   const stageNum = attempt.current_stage_index + 1;
   const targetRole = attempt.template?.target_role || 'Software Engineer';
+  const immersive = Boolean(attempt.immersive || attempt.template?.immersive);
+  const immersion = attempt.template?.immersion || null;
+  const personaName =
+    stage?.config?.persona_name ||
+    immersion?.interviewer_persona_name ||
+    (immersive ? 'Priya Sharma' : undefined);
+  const personaTitle = immersive ? 'Senior Engineer, Campus Hiring' : undefined;
 
   const floatingCamera = (
     <ExamCameraPanel
@@ -355,8 +410,25 @@ export default function PlacementDriveRunPage() {
     />
   );
 
+  const presenceKind = (runner.presence_kind || runner.stage_type) as PresenceKind | undefined;
+
   const stageBody = (
     <>
+      {runner.type === 'presence' && presenceKind && (
+        <DriveDayPresenceStage
+          key={`presence-${attempt.current_stage_index}`}
+          kind={presenceKind}
+          title={stage?.title || 'Drive Day'}
+          company={attempt.template?.company}
+          seatId={attempt.seat_id}
+          stageConfig={stage?.config}
+          immersion={immersion}
+          attempt={attempt}
+          continuing={presenceBusy}
+          onContinue={completePresenceStage}
+        />
+      )}
+
       {runner.type === 'legacy_mcq' && (
         <div className="rounded-xl border p-6 space-y-4 dark:border-gray-700">
           <p>Take the timed MCQ round linked to this drive stage.</p>
@@ -367,13 +439,19 @@ export default function PlacementDriveRunPage() {
         </div>
       )}
 
-      {runner.type === 'mcq' && (
+      {runner.type === 'mcq' && !immersive && (
         <div className="rounded-xl border p-6 space-y-4 dark:border-gray-700">
           <p>Timed MCQ round — questions are generated for this placement drive stage.</p>
           <Button onClick={startMcqStage} disabled={startingMcq} className="gap-2">
             {startingMcq ? 'Loading questions…' : 'Start MCQ round'}
             <ArrowRight className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+
+      {runner.type === 'mcq' && immersive && (
+        <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-300">
+          {startingMcq ? 'Entering Aptitude Hall…' : 'Preparing aptitude round…'}
         </div>
       )}
 
@@ -389,6 +467,8 @@ export default function PlacementDriveRunPage() {
         <MockInterviewRoom
           key={`interview-${attempt.current_stage_index}`}
           persona={interviewPersona(runner)}
+          personaName={personaName}
+          personaTitle={personaTitle}
           targetRole={targetRole}
           company={attempt.template?.company}
           driveAttemptId={attemptId}
@@ -434,15 +514,21 @@ export default function PlacementDriveRunPage() {
     </>
   );
 
-  if (isEmbeddedExamStage(runner.type)) {
+  if (isEmbeddedExamStage(runner.type) || immersive) {
     return (
       <ExamFocusShell
         title={attempt.template?.title || 'Placement Drive'}
-        subtitle={stage?.title ? `${stage.title} — ${stage.stage_type?.replace(/_/g, ' ')}` : undefined}
-        stageLabel={`Stage ${stageNum} of ${attempt.total_stages}`}
+        subtitle={stage?.title ? `${stage.title}` : undefined}
+        stageLabel={
+          immersive
+            ? `Drive Day · Stage ${stageNum} of ${attempt.total_stages}`
+            : `Stage ${stageNum} of ${attempt.total_stages}`
+        }
+        immersive={immersive}
+        exitWarning={immersion?.exit_warning}
       >
         {floatingCamera}
-        <div className="h-full overflow-y-auto p-4 md:p-6">{stageBody}</div>
+        <div className="h-full overflow-y-auto">{stageBody}</div>
       </ExamFocusShell>
     );
   }

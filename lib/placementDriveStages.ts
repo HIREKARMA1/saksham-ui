@@ -1,9 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  ArrowRight,
   Brain,
+  CheckCircle2,
   Code2,
   FileText,
   Heart,
+  IdCard,
   MessageCircle,
   Mic,
   PieChart,
@@ -97,6 +100,24 @@ export const STAGE_THEMES: Record<string, StageTheme> = {
     label: 'Case Study',
     iconBg: 'bg-amber-100 dark:bg-amber-950/40',
     iconColor: 'text-amber-600',
+  },
+  reporting: {
+    icon: IdCard,
+    label: 'Reporting',
+    iconBg: 'bg-slate-100 dark:bg-slate-800',
+    iconColor: 'text-slate-600',
+  },
+  transition: {
+    icon: ArrowRight,
+    label: 'Transition',
+    iconBg: 'bg-sky-100 dark:bg-sky-950/40',
+    iconColor: 'text-sky-600',
+  },
+  results_reveal: {
+    icon: CheckCircle2,
+    label: 'Results',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-950/40',
+    iconColor: 'text-emerald-600',
   },
 };
 

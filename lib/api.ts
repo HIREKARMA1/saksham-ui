@@ -1914,8 +1914,53 @@ class ApiClient {
     return response.data;
   }
 
+  async getPhase1TcsNqtDrive(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/placement-drives/phase1/tcs-nqt');
+    return response.data;
+  }
+
+  async startPhase1TcsNqtDrive(): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/placement-drives/phase1/tcs-nqt/start');
+    return response.data;
+  }
+
   async getPlacementDriveAttempt(attemptId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/placement-drives/attempts/${attemptId}`);
+    return response.data;
+  }
+
+  async getStudentContext(): Promise<{ context: any }> {
+    const response: AxiosResponse = await this.client.get('/students/context');
+    return response.data;
+  }
+
+  async rebuildStudentCurriculum(): Promise<{ context: any; sidebar: any }> {
+    const response: AxiosResponse = await this.client.post('/students/context/curriculum/rebuild');
+    return response.data;
+  }
+
+  async recommendStudentRoles(maxRoles = 5): Promise<{ context: any; recommendation: any }> {
+    const response: AxiosResponse = await this.client.post('/students/agents/roles/recommend', {
+      max_roles: maxRoles,
+    });
+    return response.data;
+  }
+
+  async retargetResume(data: {
+    message: string;
+    target_role?: string;
+    job_description?: string;
+    accepted_suggestion_ids?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/students/agents/resume/retarget', data);
+    return response.data;
+  }
+
+  async lockResumeVersion(data: {
+    resume_version_id: string;
+    target_role: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/students/agents/resume/lock', data);
     return response.data;
   }
 
@@ -2322,6 +2367,129 @@ class ApiClient {
     time_taken_seconds?: number;
   }): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/enterprise/public/invites/${token}/submit`, data);
+    return response.data;
+  }
+
+  // ── Phase-1 Agents POC ──────────────────────────────────────────
+  async resumeAgentIngest(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response: AxiosResponse = await this.client.post("/agents/resume/ingest", formData);
+    return response.data;
+  }
+
+  async resumeAgentListVersions(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/agents/resume/versions");
+    return response.data;
+  }
+
+  async resumeAgentGetVersion(versionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/agents/resume/versions/${versionId}`);
+    return response.data;
+  }
+
+  async resumeAgentCreateSession(versionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post("/agents/resume/sessions", {
+      version_id: versionId,
+    });
+    return response.data;
+  }
+
+  async resumeAgentMessage(sessionId: string, message: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/resume/sessions/${sessionId}/message`,
+      { message },
+    );
+    return response.data;
+  }
+
+  async resumeAgentApproveDraft(versionId: string, acceptSuggestions = false): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/resume/versions/${versionId}/approve-draft`,
+      { accept_suggestions: acceptSuggestions },
+    );
+    return response.data;
+  }
+
+  async resumeAgentLock(versionId: string, acceptSuggestions = false): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/resume/versions/${versionId}/lock`,
+      { accept_suggestions: acceptSuggestions },
+    );
+    return response.data;
+  }
+
+  async resumeAgentExportPdf(versionId: string): Promise<Blob> {
+    const response: AxiosResponse = await this.client.get(
+      `/agents/resume/versions/${versionId}/export.pdf`,
+      { responseType: "blob" },
+    );
+    return response.data;
+  }
+
+  async resumeAgentGetContext(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/agents/resume/context");
+    return response.data;
+  }
+
+  async resumeAgentListRoles(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/agents/resume/roles");
+    return response.data;
+  }
+
+  async driveDayStart(templateKey = "tcs_nqt"): Promise<any> {
+    const response: AxiosResponse = await this.client.post("/agents/drive-day/start", {
+      template_key: templateKey,
+    });
+    return response.data;
+  }
+
+  async driveDayGetSession(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/agents/drive-day/sessions/${sessionId}`);
+    return response.data;
+  }
+
+  async driveDayAcknowledgeReporting(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/drive-day/sessions/${sessionId}/acknowledge-reporting`,
+    );
+    return response.data;
+  }
+
+  async driveDayContinueTransition(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/drive-day/sessions/${sessionId}/continue-transition`,
+    );
+    return response.data;
+  }
+
+  async driveDaySubmitAptitude(sessionId: string, answers: Record<string, number>): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/drive-day/sessions/${sessionId}/submit-aptitude`,
+      { answers },
+    );
+    return response.data;
+  }
+
+  async driveDaySubmitCoding(
+    sessionId: string,
+    data: { problem_id: string; passed_tests: number; total_tests: number },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/drive-day/sessions/${sessionId}/submit-coding`,
+      data,
+    );
+    return response.data;
+  }
+
+  async driveDayCompleteInterview(
+    sessionId: string,
+    data: { overall_score: number; report?: any },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/agents/drive-day/sessions/${sessionId}/complete-interview`,
+      data,
+    );
     return response.data;
   }
 }

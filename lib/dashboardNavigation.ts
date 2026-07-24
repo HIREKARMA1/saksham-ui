@@ -13,6 +13,8 @@ export function getDashboardFeatureRoute(
       dashboard: baseRoute,
       'career-guidance': `${baseRoute}/career-guidance`,
       resume: `${baseRoute}/resume`,
+      'resume-agent': `${baseRoute}/resume-agent`,
+      'drive-day': `${baseRoute}/drive-day`,
       assessment: `${baseRoute}/assessment`,
       'mock-tests': `${baseRoute}/mock-tests`,
       'placement-drives': `${baseRoute}/placement-drives`,
