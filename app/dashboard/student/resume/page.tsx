@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import {
   Card,
@@ -302,6 +303,7 @@ function toStringList(value: unknown): string[] {
 }
 
 export default function ResumePage() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -1116,6 +1118,16 @@ export default function ResumePage() {
                         </>
                       )}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.push("/dashboard/student/resume/editor")}
+                      disabled={isCalculatingATS}
+                      className="w-full mt-2 font-semibold py-3 rounded-lg gap-2 text-sm border-[#0068FC]/40 text-[#0068FC] hover:bg-[#E8EFFF]"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Improve with AI Chat
+                    </Button>
                   </div>
                 )}
 
@@ -1331,10 +1343,18 @@ export default function ResumePage() {
                   to improve your resume.
                 </p>
               </div>
-              <div className="flex items-center gap-3 self-start sm:self-center">
+              <div className="flex items-center gap-3 self-start sm:self-center flex-wrap">
+                <Button
+                  onClick={() => router.push("/dashboard/student/resume/editor")}
+                  className="bg-[#0068FC] hover:bg-blue-700 text-white font-medium text-xs sm:text-sm shadow-sm hover:shadow-md transition-all rounded-lg gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Improve with AI Chat
+                </Button>
                 <Button
                   onClick={handleReset}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm shadow-sm hover:shadow-md transition-all rounded-lg"
+                  variant="outline"
+                  className="font-medium text-xs sm:text-sm rounded-lg"
                 >
                   Analyze Another Resume
                 </Button>

@@ -841,6 +841,70 @@ class ApiClient {
     return response.data;
   }
 
+  /** Start Claude resume editor session from the student's existing uploaded resume. */
+  async startResumeEditorSession(): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/students/resume-editor/sessions",
+      {},
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async getResumeEditorSession(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/resume-editor/sessions/${sessionId}`,
+    );
+    return response.data;
+  }
+
+  async sendResumeEditorMessage(
+    sessionId: string,
+    payload: { message: string; pivot_answers?: Record<string, string> | null },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/students/resume-editor/sessions/${sessionId}/messages`,
+      payload,
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async listResumeEditorVersions(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/resume-editor/sessions/${sessionId}/versions`,
+    );
+    return response.data;
+  }
+
+  async revertResumeEditorVersion(sessionId: string, version: number): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/students/resume-editor/sessions/${sessionId}/versions/${version}/revert`,
+    );
+    return response.data;
+  }
+
+  async downloadResumeEditorVersion(
+    sessionId: string,
+    version: number,
+    format: "pdf" | "docx" = "pdf",
+  ): Promise<{ blob: Blob; filename: string }> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/resume-editor/sessions/${sessionId}/versions/${version}/download`,
+      {
+        params: { format },
+        responseType: "blob",
+      },
+    );
+    const disposition = response.headers["content-disposition"] as string | undefined;
+    let filename = `resume_v${version}.${format}`;
+    if (disposition) {
+      const match = /filename="?([^";]+)"?/i.exec(disposition);
+      if (match?.[1]) filename = match[1];
+    }
+    return { blob: response.data as Blob, filename };
+  }
+
   /**
    * Get job recommendations based on resume
    * @returns Top 15 job recommendations with match scores
