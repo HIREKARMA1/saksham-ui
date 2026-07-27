@@ -1,0 +1,2548 @@
+import axios, {
+  AxiosInstance,
+  AxiosResponse,
+  AxiosProgressEvent,
+  InternalAxiosRequestConfig,
+} from "axios";
+import { config } from "./config";
+import toast from "react-hot-toast";
+
+// Extend Axios config to include custom properties
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
+class ApiClient {
+  public client: AxiosInstance;
+
+  constructor() {
+    const shouldLog =
+      typeof window !== "undefined" && process.env.NODE_ENV !== "production";
+
+    // Validate API base URL
+    if (shouldLog && !config.api.fullUrl) {
+      console.warn(
+        "⚠️ API Base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL environment variable.",
+      );
+    }
+
+    this.client = axios.create({
+      baseURL: config.api.fullUrl,
+      timeout: 180000, // 180 seconds timeout (3 minutes) for web scraping operations
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (shouldLog) {
+      console.log("🚀 API Client initialized:", {
+        baseURL: config.api.fullUrl || "(not configured)",
+        timeout: "180s (3 minutes)",
+      });
+    }
+
+    // Add request interceptor to include auth token
+    this.client.interceptors.request.use(
+      async (config: CustomAxiosRequestConfig) => {
+        // Add API version prefix
+        if (!config.url?.startsWith("/api/v1/")) {
+          config.url = `/api/v1${config.url}`;
+        }
+
+        // FormData must not use application/json — browser sets multipart boundary
+        if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+          delete config.headers["Content-Type"];
+        }
+
+        // Add auth token
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        // Skip proactive refresh for refresh token endpoint itself to prevent infinite loop
+        if (config.url?.includes("/auth/refresh")) {
+          return config;
+        }
+
+        // Check if token is about to expire and refresh proactively
+        const tokenExpiry = localStorage.getItem("token_expiry");
+        if (tokenExpiry && Date.now() > parseInt(tokenExpiry) - 60000) {
+          // Refresh 1 minute before expiry
+          const refreshToken = localStorage.getItem("refresh_token");
+          if (refreshToken) {
+            try {
+              const response = await this.refreshToken(refreshToken);
+              localStorage.setItem("access_token", response.access_token);
+              localStorage.setItem("refresh_token", response.refresh_token);
+              localStorage.setItem(
+                "token_expiry",
+                String(Date.now() + 30 * 60 * 1000),
+              ); // 30 minutes
+              config.headers.Authorization = `Bearer ${response.access_token}`;
+            } catch (error) {
+              console.warn(
+                "Proactive token refresh failed, continuing with existing token",
+                error
+              );
+              // If refresh fails, don't clear tokens - let the response interceptor handle it
+            }
+          }
+        }
+
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      },
+    );
+
+    // Add response interceptor to handle token refresh
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest: CustomAxiosRequestConfig = error.config;
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+
+          // Check if error message indicates session was invalidated (logged in on another device)
+          const errorMessage = error.response?.data?.detail || "";
+          const isSessionInvalidated =
+            errorMessage.includes("Session expired or invalid") ||
+            errorMessage.includes("Session not found");
+
+          // If session was invalidated, don't try to refresh - just logout
+          if (isSessionInvalidated) {
+            console.warn("Session invalidated - user logged in on another device");
+            this.clearAuthTokens();
+            // Show user-friendly notification
+            toast.error("You have been logged out. You logged in on another device.", {
+              duration: 5000,
+              icon: "🔐",
+            });
+            // Only redirect if we're not already on the login page
+            if (window.location.pathname !== "/auth/login") {
+              window.location.href = "/auth/login";
+            }
+            return Promise.reject(error);
+          }
+
+          try {
+            const refreshToken = localStorage.getItem("refresh_token");
+            if (refreshToken) {
+              const response = await this.refreshToken(refreshToken);
+              localStorage.setItem("access_token", response.access_token);
+              localStorage.setItem("refresh_token", response.refresh_token);
+              localStorage.setItem(
+                "token_expiry",
+                String(Date.now() + 30 * 60 * 1000),
+              );
+
+              originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
+              return this.client(originalRequest);
+            }
+          } catch (refreshError) {
+            // Refresh failed, clear all auth data and redirect to login
+            this.clearAuthTokens();
+            // Only redirect if we're not already on the login page
+            if (window.location.pathname !== "/auth/login") {
+              window.location.href = "/auth/login";
+            }
+          }
+        }
+
+        // Handle subscription/license enforcement (403) globally
+        if (error.response?.status === 403) {
+          const detail = error.response?.data?.detail || "";
+          const msg = typeof detail === "string" ? detail : "";
+          const msgLower = msg.toLowerCase();
+          const looksLikeEntitlement =
+            (msgLower.includes("subscription") || msgLower.includes("license")) &&
+            (msgLower.includes("expired") ||
+              msgLower.includes("contact hirekarma") ||
+              msgLower.includes("free plan"));
+
+          if (looksLikeEntitlement && typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("subscription-required", {
+                detail: { message: msg },
+              }),
+            );
+          }
+        }
+
+        return Promise.reject(error);
+      },
+    );
+  }
+
+  // Auth endpoints
+  async registerStudent(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/auth/register/student",
+      data,
+    );
+    return response.data;
+  }
+
+  // Guest free readiness check (no auth)
+  async guestReadinessCatalog(): Promise<{ target_roles: string[]; branches: string[] }> {
+    const response: AxiosResponse = await this.client.get("/guest-readiness/catalog");
+    return response.data;
+  }
+
+  async guestReadinessStart(): Promise<{ session_token: string }> {
+    const response: AxiosResponse = await this.client.post("/guest-readiness/start");
+    return response.data;
+  }
+
+  async guestReadinessSetProfile(token: string, target_role: string, branch: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/guest-readiness/${token}/profile`, {
+      target_role,
+      branch,
+    });
+    return response.data;
+  }
+
+  async guestReadinessUploadResume(token: string, file: File): Promise<any> {
+    const form = new FormData();
+    form.append("file", file);
+    const response: AxiosResponse = await this.client.post(
+      `/guest-readiness/${token}/resume`,
+      form,
+    );
+    return response.data;
+  }
+
+  async guestReadinessGetQuiz(token: string): Promise<{ questions: any[] }> {
+    const response: AxiosResponse = await this.client.get(`/guest-readiness/${token}/quiz`);
+    return response.data;
+  }
+
+  async guestReadinessSubmitQuiz(token: string, answers: Record<string, string>): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/guest-readiness/${token}/quiz/submit`,
+      { answers },
+    );
+    return response.data;
+  }
+
+  async guestReadinessGetResults(token: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/guest-readiness/${token}/results`);
+    return response.data;
+  }
+
+  async login(data: any): Promise<any> {
+    console.log(
+      "📡 API login POST:",
+      this.client.defaults.baseURL + "/api/v1/auth/login",
+      data,
+    );
+    const response: AxiosResponse = await this.client.post("/auth/login", data);
+    console.log("📥 Login response:", response.data);
+    return response.data;
+  }
+
+  async refreshToken(refreshToken: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post("/auth/refresh", {
+      refresh_token: refreshToken,
+    });
+    return response.data;
+  }
+
+  async logout(): Promise<any> {
+    const response: AxiosResponse = await this.client.post("/auth/logout");
+    return response.data;
+  }
+
+  async getCurrentUser(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/auth/me");
+    return response.data;
+  }
+
+  // Helper methods
+  setAuthTokens(accessToken: string, refreshToken: string): void {
+    localStorage.setItem("access_token", accessToken);
+    localStorage.setItem("refresh_token", refreshToken);
+  }
+
+  clearAuthTokens() {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_expiry");
+  }
+
+  isAuthenticated(): boolean {
+    return !!localStorage.getItem("access_token");
+  }
+
+  getAccessToken(): string | null {
+    return localStorage.getItem("access_token");
+  }
+
+  // Admin endpoints
+  async getAdminDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/admin/dashboard");
+    return response.data;
+  }
+
+  async getColleges(params?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/admin/colleges", {
+      params,
+    });
+    return response.data;
+  }
+
+  async createCollege(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/admin/colleges",
+      data,
+    );
+    return response.data;
+  }
+
+  async updateCollege(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/colleges/${id}`,
+      data,
+    );
+    return response.data;
+  }
+
+  async deactivateCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/colleges/${id}/deactivate`,
+    );
+    return response.data;
+  }
+
+  async activateCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/colleges/${id}/activate`,
+    );
+    return response.data;
+  }
+
+  async deleteCollege(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/colleges/${id}`,
+    );
+    return response.data;
+  }
+
+  async updateCollegeLicense(id: string, data: {
+    license_type: string;
+    license_expiry?: string;
+    total_students?: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/colleges/${id}/license`,
+      data,
+    );
+    return response.data;
+  }
+
+  async getStudents(params?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/admin/students", {
+      params,
+    });
+    return response.data;
+  }
+
+  async createStudent(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/admin/students",
+      data,
+    );
+    return response.data;
+  }
+
+  async updateStudent(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/students/${id}`,
+      data,
+    );
+    return response.data;
+  }
+
+  async deactivateStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/students/${id}/deactivate`,
+    );
+    return response.data;
+  }
+
+  async activateStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/students/${id}/activate`,
+    );
+    return response.data;
+  }
+
+  async deleteStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/students/${id}`,
+    );
+    return response.data;
+  }
+
+  async updateStudentSubscription(id: string, data: {
+    subscription_type: 'free' | 'premium' | 'college_license';
+    subscription_expiry?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/admin/students/${id}/subscription`,
+      data,
+    );
+    return response.data;
+  }
+
+  async uploadStudentsCSV(file: File, collegeId?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (collegeId) {
+      formData.append("college_id", collegeId);
+      console.log("📤 Uploading CSV with college_id:", collegeId);
+    } else {
+      console.log("📤 Uploading CSV without college_id");
+    }
+    const response: AxiosResponse = await this.client.post(
+      "/admin/students/upload-csv",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+    return response.data;
+  }
+
+  // College endpoints
+  async getCollegeDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/college/dashboard");
+    return response.data;
+  }
+
+  async getCollegeAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/college/analytics");
+    return response.data;
+  }
+
+  async getCollegeProfile(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/college/profile");
+    return response.data;
+  }
+
+  async updateCollegeProfile(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      "/college/profile",
+      data,
+    );
+    return response.data;
+  }
+
+  async getCollegeStudents(params?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/college/students", {
+      params,
+    });
+    return response.data;
+  }
+
+  async createCollegeStudent(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/college/students",
+      data,
+    );
+    return response.data;
+  }
+
+  async updateCollegeStudent(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/college/students/${id}`,
+      data,
+    );
+    return response.data;
+  }
+
+  async deleteCollegeStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/college/students/${id}`,
+    );
+    return response.data;
+  }
+
+  async getCollegeStudentAnalytics(studentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/college/students/${studentId}/analytics`
+    );
+    return response.data;
+  }
+
+  async activateCollegeStudent(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/college/students/${id}/activate`,
+    );
+    return response.data;
+  }
+
+  async updateCollegeStudentSubscription(id: string, data: {
+    subscription_type: 'free' | 'premium' | 'college_license';
+    subscription_expiry?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      `/college/students/${id}/subscription`,
+      data,
+    );
+    return response.data;
+  }
+
+  async uploadCollegeStudentsCSV(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response: AxiosResponse = await this.client.post(
+      "/college/students/upload-csv",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+    return response.data;
+  }
+
+  // ✅ Student endpoints - ALL using /students/ (plural)
+  async getStudentDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/dashboard",
+    );
+    return response.data;
+  }
+
+  // ---- Career OS ----
+  async getCareerHome(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/career-os/home");
+    return response.data;
+  }
+
+  async getCareerGraph(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/career-os/career-graph");
+    return response.data;
+  }
+
+  async completeCareerMission(missionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/missions/${missionId}/complete`,
+    );
+    return response.data;
+  }
+
+  async setCareerGoal(data: {
+    target_role: string;
+    target_companies?: string[];
+    timeline_months?: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post("/career-os/goals", data);
+    return response.data;
+  }
+
+  async getInternshipTemplates(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/internships/templates",
+    );
+    return response.data;
+  }
+
+  async startInternship(templateSlug: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/career-os/internships/runs",
+      { template_slug: templateSlug },
+    );
+    return response.data;
+  }
+
+  async getInternshipRun(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/career-os/internships/runs/${runId}`,
+    );
+    return response.data;
+  }
+
+  async submitInternshipTask(
+    runId: string,
+    taskId: string,
+    content: string,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/internships/runs/${runId}/tasks/${taskId}/submit`,
+      { content },
+    );
+    return response.data;
+  }
+
+  async postOfficeMessage(
+    runId: string,
+    threadId: string,
+    body: string,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/internships/runs/${runId}/threads/${threadId}/messages`,
+      { body },
+    );
+    return response.data;
+  }
+
+  async completeInternship(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/internships/runs/${runId}/complete`,
+    );
+    return response.data;
+  }
+
+  async startDriveDay(company: string, role: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/career-os/drive-day/sessions",
+      { company, role },
+    );
+    return response.data;
+  }
+
+  async getDriveDay(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/career-os/drive-day/sessions/${sessionId}`,
+    );
+    return response.data;
+  }
+
+  async transitionDriveDay(sessionId: string, toRoom?: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/drive-day/sessions/${sessionId}/transition`,
+      { to_room: toRoom ?? null },
+    );
+    return response.data;
+  }
+
+  async submitDriveDayCoding(
+    sessionId: string,
+    data: { source_code: string; problem_slug?: string; use_ai?: boolean },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/drive-day/sessions/${sessionId}/coding`,
+      data,
+    );
+    return response.data;
+  }
+
+  async getCareerPassport(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/career-os/passport");
+    return response.data;
+  }
+
+  async getCareerPredictions(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/career-os/predictions");
+    return response.data;
+  }
+
+  async getCodingProblems(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/readiness/coding/problems",
+    );
+    return response.data;
+  }
+
+  async submitCodingAttempt(data: {
+    problem_slug: string;
+    source_code: string;
+    language?: string;
+    use_ai?: boolean;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/career-os/readiness/coding/submit",
+      data,
+    );
+    return response.data;
+  }
+
+  async startInterviewPractice(data: {
+    target_role: string;
+    interview_type?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/career-os/readiness/interviews",
+      data,
+    );
+    return response.data;
+  }
+
+  async getInterviewPractice(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/career-os/readiness/interviews/${sessionId}`,
+    );
+    return response.data;
+  }
+
+  async interviewPracticeTurn(sessionId: string, message: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/readiness/interviews/${sessionId}/turn`,
+      { message },
+    );
+    return response.data;
+  }
+
+  async completeInterviewPractice(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/readiness/interviews/${sessionId}/complete`,
+    );
+    return response.data;
+  }
+
+  async getInstituteOverview(useAi = true): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/institute/overview",
+      { params: { use_ai: useAi } },
+    );
+    return response.data;
+  }
+
+  async getInstituteBatchReadiness(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/institute/batches/readiness",
+    );
+    return response.data;
+  }
+
+  async getInstituteForecasts(horizonDays = 90): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/institute/forecasts",
+      { params: { horizon_days: horizonDays } },
+    );
+    return response.data;
+  }
+
+  async getInstituteCurriculumInsights(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/institute/curriculum-insights",
+    );
+    return response.data;
+  }
+
+  async assignInstituteIntervention(data: {
+    student_id: string;
+    title: string;
+    action_type?: string;
+    reason?: string;
+    competency_key?: string;
+    href?: string;
+    priority?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/career-os/institute/interventions",
+      data,
+    );
+    return response.data;
+  }
+
+  async dismissInstituteIntervention(interventionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/career-os/institute/interventions/${interventionId}/dismiss`,
+    );
+    return response.data;
+  }
+
+  async listInstituteInterventions(status?: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/career-os/institute/interventions",
+      { params: status ? { status } : undefined },
+    );
+    return response.data;
+  }
+
+  async getStudentProfile(): Promise<any> {
+    const response: AxiosResponse = await this.client.get("/students/profile");
+    return response.data;
+  }
+
+  async updateStudentProfile(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(
+      "/students/profile",
+      data,
+    );
+    return response.data;
+  }
+
+  /**
+   * Upload resume with progress tracking
+   * @param file - Resume file (PDF/DOCX)
+   * @param onProgress - Optional callback for upload progress (0-100)
+   * @returns Upload response with file details
+   */
+  async uploadResume(
+    file: File,
+    onProgress?: (progress: number) => void,
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response: AxiosResponse = await this.client.post(
+      "/students/resume/upload", // ✅ /students/
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            onProgress(percentCompleted);
+          }
+        },
+      },
+    );
+    return response.data;
+  }
+
+  /**
+   * Get resume status
+   * @returns Resume status and details
+   */
+  async getResumeStatus(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/resume/status",
+    ); // ✅ /students/
+    return response.data;
+  }
+
+  /**
+   * Delete the stored resume so the student can upload a different one.
+   * Always allowed — does not require a paid subscription.
+   */
+  async deleteResume(): Promise<any> {
+    const response: AxiosResponse = await this.client.delete("/students/resume");
+    return response.data;
+  }
+
+  /**
+   * Get ATS score for uploaded resume (role-aware analysis via Cohere).
+   * @param jobDescription - Optional job description for better matching
+   * @param forceRegenerate - Bypass cache and re-run analysis (use after prompt/engine fixes)
+   */
+  async getATSScore(jobDescription?: string, forceRegenerate: boolean = false): Promise<any> {
+    const params: Record<string, string | boolean> = {};
+    if (jobDescription) params.job_description = jobDescription;
+    if (forceRegenerate) params.force_regenerate = true;
+    const response: AxiosResponse = await this.client.get(
+      "/students/ats-score",
+      { params },
+    );
+    return response.data;
+  }
+
+  /**
+   * Get job recommendations based on resume
+   * @returns Top 15 job recommendations with match scores
+   */
+  async getJobRecommendations(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/job-recommendations",
+    ); // ✅ /students/
+    return response.data;
+  }
+
+  /**
+   * Get available jobs in the market from multiple platforms (LinkedIn, Unstop, Foundit, Naukri)
+   * @param keywords - Optional comma-separated keywords (e.g., "software engineer,data analyst")
+   * @param location - Job location (default: "India")
+   * @param maxJobs - Maximum number of jobs to fetch per source (default: 15, max: 15)
+   * @param includeResumeSkills - Include skills extracted from resume (default: false)
+   * @param sources - Comma-separated platforms to search (e.g., "linkedin,unstop,foundit,naukri")
+   * @returns Live job listings from selected platforms
+   */
+  async getMarketJobs(
+    keywords?: string,
+    location: string = "India",
+    maxJobs: number = 15,
+    includeResumeSkills: boolean = false,
+    sources: string = "linkedin",
+  ): Promise<any> {
+    const params: any = {
+      location,
+      max_jobs: maxJobs,
+      include_resume_skills: includeResumeSkills,
+      sources,
+    };
+    if (keywords) {
+      params.keywords = keywords;
+    }
+    // Use extended timeout for web scraping operations (3 minutes)
+    const response: AxiosResponse = await this.client.get(
+      "/students/market-jobs",
+      {
+        params,
+        timeout: 180000, // 3 minutes for web scraping (increased from 2 minutes)
+      },
+    );
+    return response.data;
+  }
+
+  /**
+   * Get skills extracted from student's resume
+   * @returns Extracted skills from ATS analysis
+   */
+  async getResumeSkills(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/resume-skills",
+    );
+    return response.data;
+  }
+
+  /**
+   * Get student assessments history
+   * @param skip - Number of records to skip (pagination)
+   * @param limit - Number of records to return (pagination)
+   * @returns Assessment history
+   */
+  // NOTE: See the unified implementation near the bottom of the file.
+
+  /**
+   * Get student performance analytics
+   * @returns Performance analytics data
+   */
+  // NOTE: See the unified implementation near the bottom of the file.
+
+  /**
+   * Get subscription status and details
+   * @returns Subscription information
+   */
+  async getSubscriptionStatus(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/subscription",
+    ); // ✅ /students/
+    return response.data;
+  }
+
+  // Assessment endpoints
+  async getJobRoles(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/assessments/job-roles",
+    );
+    return response.data;
+  }
+
+  async startAssessment(jobRoleId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/assessments/start",
+      {
+        job_role_id: jobRoleId,
+      },
+    );
+    return response.data;
+  }
+
+  async getAssessmentRound(
+    assessmentId: string,
+    roundNumber: number,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/rounds/${roundNumber}`,
+    );
+    return response.data;
+  }
+
+  async submitRoundResponses(
+    assessmentId: string,
+    roundId: string,
+    responses: any[],
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/rounds/${roundId}/submit`,
+      responses,
+    );
+    return response.data;
+  }
+
+  async executeCode(
+    assessmentId: string,
+    roundId: string,
+    payload: {
+      question_id: string;
+      language: string;
+      code: string;
+      stdin?: string;
+    },
+  ): Promise<any> {
+    // Judge0 executions can take longer; override the default 30s client timeout for this call
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/rounds/${roundId}/code/execute`,
+      payload,
+      { timeout: 60000 }, // 60s
+    );
+    return response.data;
+  }
+
+  async submitVoiceResponse(
+    assessmentId: string,
+    roundId: string,
+    formData: FormData,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/rounds/${roundId}/voice-response`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+    return response.data;
+  }
+
+  async completeAssessment(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/complete`,
+    );
+    return response.data;
+  }
+
+  async getAssessmentStatus(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/status`,
+    );
+    return response.data;
+  }
+
+  async getAssessmentReport(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/report`,
+    );
+    return response.data;
+  }
+
+  async getAssessmentReportWithQuestions(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/report`,
+      {
+        params: { include: "questions" },
+      },
+    );
+    return response.data;
+  }
+
+  async getAssessmentQA(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/qa`,
+    );
+    return response.data;
+  }
+
+  async getAssessmentPlaylist(
+    assessmentId: string,
+    max_results?: number,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/playlist`,
+      {
+        params: max_results ? { max_results } : {},
+      },
+    );
+    return response.data;
+  }
+
+  async getStudentAssessments(
+    skip: number = 0,
+    limit: number = 50,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/assessments",
+      {
+        params: { skip, limit },
+      },
+    );
+    return response.data;
+  }
+
+  async getStudentAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/analytics",
+    );
+    return response.data;
+  }
+
+  async getStudentAnalyticsWithFilters(
+    params: {
+      start_date?: string;
+      end_date?: string;
+      categories?: string;
+    } = {},
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/analytics",
+      { params },
+    );
+    return response.data;
+  }
+
+  async getStudentTimeline(
+    params: {
+      start_date?: string;
+      end_date?: string;
+      categories?: string;
+    } = {},
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/analytics/timeline",
+      { params },
+    );
+    return response.data;
+  }
+
+  async getStudentSubscriptionStatus(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/subscription-status",
+    );
+    return response.data;
+  }
+
+  async getStudentUsageAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/usage-analytics",
+    );
+    return response.data;
+  }
+
+  // ============================================================================
+  // PHASE 2: COLLEGE SUBSCRIPTION & LICENSE ANALYTICS ENDPOINTS
+  // ============================================================================
+
+  async getCollegeLicenseOverview(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/college/license-overview",
+    );
+    return response.data;
+  }
+
+  async getStudentSubscriptionDistribution(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/college/subscription-distribution",
+    );
+    return response.data;
+  }
+
+  async getUsageAnalyticsBySubscription(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/college/usage-analytics-by-subscription",
+    );
+    return response.data;
+  }
+
+  async getSubscriptionHealth(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/college/subscription-health",
+    );
+    return response.data;
+  }
+
+  // ============================================================================
+  // PHASE 3: ADMIN SUBSCRIPTION & BUSINESS ANALYTICS ENDPOINTS
+  // ============================================================================
+
+  async getAdminSubscriptionOverview(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/subscription-overview",
+    );
+    return response.data;
+  }
+
+  async getAdminCollegeLicenses(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/college-licenses",
+    );
+    return response.data;
+  }
+
+  async getAdminSubscriptionTrends(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/subscription-trends",
+    );
+    return response.data;
+  }
+
+  async getAdminRevenueMetrics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/revenue-metrics",
+    );
+    return response.data;
+  }
+
+  // Career Guidance API
+  careerGuidance = {
+    getProgress: async (): Promise<any> => {
+      const response = await this.client.get("/career-guidance/progress");
+      return response.data;
+    },
+
+    startSession: async (data: {
+      resume_included: boolean;
+      preferred_language: string;
+      force_new?: boolean;
+    }): Promise<any> => {
+      const response = await this.client.post("/career-guidance/start", data);
+      return response.data;
+    },
+
+    sendMessage: async (data: {
+      session_id: string;
+      message: string;
+    }): Promise<any> => {
+      const response = await this.client.post("/career-guidance/message", data);
+      return response.data;
+    },
+
+    getSession: async (sessionId: string): Promise<any> => {
+      const response = await this.client.get(
+        `/career-guidance/session/${sessionId}`,
+      );
+      return response.data;
+    },
+
+    getSessions: async (): Promise<any> => {
+      const response = await this.client.get("/career-guidance/sessions");
+      return response.data;
+    },
+
+    deleteSession: async (sessionId: string): Promise<any> => {
+      const response = await this.client.delete(
+        `/career-guidance/session/${sessionId}`,
+      );
+      return response.data;
+    },
+  };
+
+  async getCareerGuidancePlaylist(sessionId: string): Promise<any> {
+    const response = await this.client.get(
+      `/career-guidance/session/${sessionId}/playlist`,
+    );
+    return response.data;
+  }
+
+  async getGPSRecommendations(): Promise<any> {
+    const response = await this.client.get("/career-guidance/gps/recommend");
+    return response.data;
+  }
+
+  async refreshGPSRecommendations(): Promise<any> {
+    const response = await this.client.post("/career-guidance/gps/recommend/refresh");
+    return response.data;
+  }
+
+  async getCareerGraph(): Promise<any> {
+    const response = await this.client.get("/career-guidance/graph");
+    return response.data;
+  }
+
+  async refreshCareerGraph(): Promise<any> {
+    const response = await this.client.post("/career-guidance/graph/refresh");
+    return response.data;
+  }
+
+  async getStudyPlanRoles(): Promise<any> {
+    const response = await this.client.get("/career-guidance/study-plan/roles");
+    return response.data;
+  }
+
+  async getStudyPlan(role: string): Promise<any> {
+    const response = await this.client.get("/career-guidance/study-plan", {
+      params: { role },
+    });
+    return response.data;
+  }
+
+  async generateStudyPlan(data: { role: string; start_date?: string; force?: boolean }): Promise<any> {
+    const response = await this.client.post("/career-guidance/study-plan", data);
+    return response.data;
+  }
+
+  async updateStudyPlanDay(data: { role: string; session_index: number; status: string }): Promise<any> {
+    const response = await this.client.patch("/career-guidance/study-plan/day", data);
+    return response.data;
+  }
+
+  async getAICareerTwin(): Promise<any> {
+    const response = await this.client.get("/career-guidance/twin");
+    return response.data;
+  }
+
+  async chatWithCareerTwin(data: { message: string; play_voice: boolean }): Promise<any> {
+    const response = await this.client.post("/career-guidance/twin/chat", data);
+    return response.data;
+  }
+
+  async updateCareerTwinSound(enabled: boolean): Promise<{ sound_enabled: boolean }> {
+    const response = await this.client.patch("/career-guidance/twin/sound", { enabled });
+    return response.data;
+  }
+
+  // Admin Analytics API
+  async getAdminAnalytics(
+    startDate?: string,
+    endDate?: string,
+    collegeId?: string
+  ): Promise<any> {
+    const params: any = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    if (collegeId) params.college_id = collegeId;
+
+    const response = await this.client.get("/admin/analytics", { params });
+    return response.data;
+  }
+
+  async exportAnalytics(
+    format: string = 'json',
+    startDate?: string,
+    endDate?: string,
+    collegeId?: string
+  ): Promise<any> {
+    const params: any = { format };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    if (collegeId) params.college_id = collegeId;
+
+    const response = await this.client.post("/admin/analytics/export", null, { params });
+    return response.data;
+  }
+
+  // Admin - Student Assessment Reports
+  async getStudentAssessmentsAdmin(studentId: string): Promise<any> {
+    const response = await this.client.get(`/admin/students/${studentId}/assessments`);
+    return response.data;
+  }
+
+  async getStudentAssessmentReportAdmin(
+    studentId: string,
+    assessmentId: string,
+    includeQuestions: boolean = false
+  ): Promise<any> {
+    const params: any = {};
+    if (includeQuestions) params.include = 'questions';
+
+    const response = await this.client.get(
+      `/admin/students/${studentId}/assessments/${assessmentId}/report`,
+      { params }
+    );
+    return response.data;
+  }
+
+  // College - Student Assessment Reports
+  async getStudentAssessmentsCollege(studentId: string): Promise<any> {
+    const response = await this.client.get(`/college/students/${studentId}/assessments`);
+    return response.data;
+  }
+
+  async getStudentAssessmentReportCollege(
+    studentId: string,
+    assessmentId: string,
+    includeQuestions: boolean = false
+  ): Promise<any> {
+    const params: any = {};
+    if (includeQuestions) params.include = 'questions';
+
+    const response = await this.client.get(
+      `/college/students/${studentId}/assessments/${assessmentId}/report`,
+      { params }
+    );
+    return response.data;
+  }
+
+  // Electrical endpoints
+  async generateElectricalQuestion(): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/assessments/electrical/generate');
+    return response.data;
+  }
+
+  async evaluateElectricalDiagram(payload: { question: string; drawing: any }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/assessments/electrical/evaluate', payload, {
+      timeout: 180000,
+    });
+    return response.data;
+  }
+
+  // Civil Engineering endpoints
+  async generateCivilProblem(): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/assessments/civil/problem');
+    return response.data;
+  }
+
+  async evaluateCivilQuantities(payload: {
+    problem: Record<string, any>;  // Complete problem object for AI evaluation
+    student_answers: Record<string, number>;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/assessments/civil/evaluate', payload, {
+      timeout: 60000,  // AI evaluation may take longer
+    });
+    return response.data;
+  }
+
+  // Practice Coding endpoints
+  async getPracticeCodingQuestions(branch: string, difficulty: string, timestamp?: number): Promise<any> {
+    const params: any = { branch, difficulty };
+    // Add timestamp for cache-busting to ensure fresh question generation
+    if (timestamp) {
+      params._t = timestamp;
+    }
+    const response: AxiosResponse = await this.client.get('/practice/coding', { params });
+    return response.data;
+  }
+
+  async executePracticeCode(payload: {
+    question_id: string;
+    language: string;
+    code: string;
+    stdin?: string;
+  }): Promise<any> {
+    // Use extended timeout for code execution
+    const response: AxiosResponse = await this.client.post('/practice/coding/execute', payload, {
+      timeout: 60000
+    });
+    return response.data;
+  }
+
+  async evaluatePracticeCodingSubmission(payload: {
+    branch: string;
+    difficulty: string;
+    items: Array<{
+      question_id: string;
+      question_text: string;
+      code: string;
+      language: string;
+      test_results?: any;
+    }>;
+  }): Promise<any> {
+    // Use extended timeout for AI evaluation
+    const response: AxiosResponse = await this.client.post('/practice/coding/evaluate', payload, {
+      timeout: 120000
+    });
+    return response.data;
+  }
+
+  // Excel Accountant Assessment endpoints
+  public excelAssessment = {
+    getAssessments: async (): Promise<any[]> => {
+      const response: AxiosResponse = await this.client.get('/excel-assessment/assessments');
+      return response.data;
+    },
+
+    createAssessment: async (payload: {
+      title: string;
+      description: string;
+      num_questions: number;
+      difficulty_level?: string;
+    }): Promise<any> => {
+      const response: AxiosResponse = await this.client.post('/excel-assessment/assessments', payload);
+      return response.data;
+    },
+
+    getAssessmentDetail: async (id: string): Promise<any> => {
+      const response: AxiosResponse = await this.client.get(`/excel-assessment/assessments/${id}`);
+      return response.data;
+    },
+
+    // Backwards-compatible alias used by some components
+    getAssessment: async (id: string): Promise<any> => {
+      const response: AxiosResponse = await this.client.get(`/excel-assessment/assessments/${id}`);
+      return response.data;
+    },
+
+    getAssessmentReport: async (id: string): Promise<any> => {
+      const response: AxiosResponse = await this.client.get(`/excel-assessment/assessments/${id}/report`);
+      return response.data;
+    },
+
+    startAssessment: async (id: string): Promise<any> => {
+      const response: AxiosResponse = await this.client.post(`/excel-assessment/assessments/${id}/start`, {});
+      return response.data;
+    },
+
+    submitExcelFile: async (assessmentId: string, questionId: string, file: File): Promise<any> => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response: AxiosResponse = await this.client.post(
+        `/excel-assessment/assessments/${assessmentId}/questions/${questionId}/submit-file`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    },
+
+    submitSpreadsheetData: async (assessmentId: string, questionId: string, data: any): Promise<any> => {
+      const response: AxiosResponse = await this.client.post(
+        `/excel-assessment/assessments/${assessmentId}/submit-data/${questionId}`,
+        data
+      );
+      return response.data;
+    },
+
+    completeAssessment: async (assessmentId: string): Promise<any> => {
+      const response: AxiosResponse = await this.client.post(
+        `/excel-assessment/assessments/${assessmentId}/complete`
+      );
+      return response.data;
+    },
+  };
+
+  // Disha Assessment endpoints
+  async getDishaPackageStatus(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${packageId}`
+    );
+    return response.data;
+  }
+
+  async getDishaGenerationStatus(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${packageId}/generation-status`
+    );
+    return response.data;
+  }
+
+  async getDishaPackageQuestions(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${packageId}/questions`
+    );
+    return response.data;
+  }
+
+  async triggerDishaQuestionGeneration(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/disha/assessments/${packageId}/generate-questions`
+    );
+    return response.data;
+  }
+
+  async getAllDishaPackages(params?: {
+    status?: string;
+    mode?: string;
+    include_expired?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/admin/packages`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async deleteDishaPackage(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/disha/admin/packages/${packageId}`
+    );
+    return response.data;
+  }
+
+  // DISHA Exam APIs
+  async startDishaAssessment(packageId: string, dishaStudentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/disha/assessments/${packageId}/start`,
+      { disha_student_id: dishaStudentId }
+    );
+    return response.data;
+  }
+
+  async getDishaRoundQuestions(
+    packageId: string,
+    roundId: string,
+    attemptId: string
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${packageId}/rounds/${roundId}`,
+      { params: { attempt_id: attemptId } }
+    );
+    return response.data;
+  }
+
+  async submitDishaRound(
+    packageId: string,
+    roundId: string,
+    attemptId: string,
+    answers: Record<string, any>
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/disha/assessments/${packageId}/rounds/${roundId}/submit`,
+      {
+        attempt_id: attemptId,
+        answers: answers
+      }
+    );
+    return response.data;
+  }
+
+  async executeDishaCode(
+    packageId: string,
+    roundId: string,
+    payload: {
+      question_id: string;
+      language: string;
+      code: string;
+      stdin?: string;
+    },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/disha/assessments/${packageId}/rounds/${roundId}/code/execute`,
+      payload,
+      { timeout: 60000 },
+    );
+    return response.data;
+  }
+
+
+  async getDishaAttemptStatus(packageId: string, attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${packageId}/attempts/${attemptId}/status`
+    );
+    return response.data;
+  }
+
+  async uploadDishaProctoringSnapshot(
+    packageId: string,
+    attemptId: string,
+    dishaStudentId: string,
+    snapshotIndex: number,
+    imageBlob: Blob,
+    roundNumber?: number
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append('snapshot_index', String(snapshotIndex));
+    formData.append('disha_student_id', dishaStudentId);
+    formData.append('file', imageBlob, `snapshot_${snapshotIndex}.jpg`);
+    if (roundNumber != null) {
+      formData.append('round_number', String(roundNumber));
+    }
+    // Let axios set Content-Type with boundary — do not set multipart/form-data manually
+    const response: AxiosResponse = await this.client.post(
+      `/disha/assessments/${packageId}/attempts/${attemptId}/proctoring/snapshots`,
+      formData
+    );
+    return response.data;
+  }
+
+  async getDishaEvaluationStatus(packageId: string, attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${packageId}/attempts/${attemptId}/evaluation-status`
+    );
+    return response.data;
+  }
+
+  async getDishaReport(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/assessments/${attemptId}/report`
+    );
+    return response.data;
+  }
+
+  // Admin DISHA APIs
+  async getDishaPackageAttempts(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/admin/packages/${packageId}/attempts`
+    );
+    return response.data;
+  }
+
+  async getDishaPackageReport(packageId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/admin/packages/${packageId}/report`
+    );
+    return response.data;
+  }
+
+  async downloadDishaPackageReportCsv(packageId: string): Promise<Blob> {
+    const response: AxiosResponse<Blob> = await this.client.get(
+      `/disha/admin/packages/${packageId}/report`,
+      { params: { format: 'csv' }, responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  async getDishaIndividualStudentReport(
+    packageId: string,
+    attemptId: string
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/disha/admin/packages/${packageId}/attempts/${attemptId}/report`
+    );
+    return response.data;
+  }
+
+  async validateDishaToken(token: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/disha/sso/validate-token`,
+      null,
+      { params: { token } }
+    );
+    return response.data;
+  }
+
+  // Mock test engine (Phase 2)
+  async getMockTestLibrary(params?: Record<string, string>): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/mock-tests/library', { params });
+    return response.data;
+  }
+
+  async getMockTestCompanies(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/mock-tests/library/companies');
+    return response.data;
+  }
+
+  async startMockTest(templateId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/${templateId}/start`);
+    return response.data;
+  }
+
+  async getMockTestAttempt(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/attempts/${attemptId}`);
+    return response.data;
+  }
+
+  async submitMockTestAttempt(attemptId: string, data: { answers: Record<string, string>; time_per_question?: Record<string, number>; time_taken_seconds?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/attempts/${attemptId}/submit`, data);
+    return response.data;
+  }
+
+  async uploadMockTestProctoringSnapshot(
+    attemptId: string,
+    snapshotIndex: number,
+    imageBlob: Blob
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append('snapshot_index', String(snapshotIndex));
+    formData.append('file', imageBlob, `snapshot_${snapshotIndex}.jpg`);
+    const response: AxiosResponse = await this.client.post(
+      `/mock-tests/attempts/${attemptId}/proctoring/snapshots`,
+      formData
+    );
+    return response.data;
+  }
+
+  // Resume gap engine (Phase 3)
+  async getResumeGapVersions(): Promise<{ versions: any[] }> {
+    const response: AxiosResponse = await this.client.get('/students/resume-gaps/versions');
+    return response.data;
+  }
+
+  async getResumeGapAnalyses(limit = 20): Promise<{ analyses: any[] }> {
+    const response: AxiosResponse = await this.client.get('/students/resume-gaps/analyses', { params: { limit } });
+    return response.data;
+  }
+
+  async getResumeGapAnalysis(analysisId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/students/resume-gaps/analyses/${analysisId}`);
+    return response.data;
+  }
+
+  async analyzeResumeGaps(data: {
+    job_description: string;
+    job_title?: string;
+    target_role?: string;
+    resume_version_id?: string;
+    match_method?: 'keyword' | 'embedding';
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/students/resume-gaps/analyze', data);
+    return response.data;
+  }
+
+  async adminListQuestionBank(params?: Record<string, string | number | undefined>): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/question-bank', { params });
+    return response.data;
+  }
+
+  async adminCreateQuestion(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/question-bank', data);
+    return response.data;
+  }
+
+  async adminGenerateAiQuestions(params: Record<string, string | number | undefined>): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/question-bank/generate-ai', null, { params });
+    return response.data;
+  }
+
+  async adminListMockTests(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/mock-tests');
+    return response.data;
+  }
+
+  async adminPreviewAiQuestions(data: {
+    count: number;
+    topic: string;
+    target_role: string;
+    difficulty?: string;
+    company?: string;
+    round_type?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/mock-tests/preview-ai', data);
+    return response.data;
+  }
+
+  async adminCreateMockTest(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/mock-tests', data);
+    return response.data;
+  }
+
+  async adminUpdateMockTest(templateId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/cms/mock-tests/${templateId}`, data);
+    return response.data;
+  }
+
+  // Phase 4 — Placement drives & mock interviews
+  async adminListPlacementDrives(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/placement-drives');
+    return response.data;
+  }
+
+  async adminGetPlacementDrive(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/cms/placement-drives/${id}`);
+    return response.data;
+  }
+
+  async adminDuplicatePlacementDrive(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/cms/placement-drives/${id}/duplicate`);
+    return response.data;
+  }
+
+  async adminListPlacementDriveStageTypes(): Promise<{
+    stage_types: string[];
+    legacy_stage_types: string[];
+  }> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/placement-drives/stage-types');
+    return response.data;
+  }
+
+  async adminCreatePlacementDrive(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/placement-drives', data);
+    return response.data;
+  }
+
+  async adminUpdatePlacementDrive(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/cms/placement-drives/${id}`, data);
+    return response.data;
+  }
+
+  async adminListSimulationPipelines(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/simulation-pipelines');
+    return response.data;
+  }
+
+  async adminGetSimulationPipeline(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/cms/simulation-pipelines/${id}`);
+    return response.data;
+  }
+
+  async adminCreateSimulationPipeline(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/simulation-pipelines', data);
+    return response.data;
+  }
+
+  async adminSeedSimulationPipelines(): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/simulation-pipelines/seed');
+    return response.data;
+  }
+
+  async adminUpdateSimulationPipeline(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/cms/simulation-pipelines/${id}`, data);
+    return response.data;
+  }
+
+  async adminDuplicateSimulationPipeline(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/cms/simulation-pipelines/${id}/duplicate`);
+    return response.data;
+  }
+
+  async adminArchiveSimulationPipeline(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/cms/simulation-pipelines/${id}/archive`);
+    return response.data;
+  }
+
+  async adminRecommendSimulationRounds(data: {
+    job_role_slug?: string;
+    job_role_name?: string;
+    department?: string;
+    experience_level?: string;
+    company?: string;
+    difficulty?: string;
+    use_ai?: boolean;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/simulation-pipelines/ai-recommend', data);
+    return response.data;
+  }
+
+  async adminListSimulationStageTypes(): Promise<{ stage_types: string[]; mandatory_for_publish: string[] }> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/simulation-pipelines/stage-types');
+    return response.data;
+  }
+
+  async adminAssignSimulationPipeline(
+    pipelineId: string,
+    data: {
+      student_ids?: string[];
+      college_ids?: string[];
+      due_at?: string;
+      notes?: string;
+    }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/cms/simulation-pipelines/${pipelineId}/assign`,
+      data
+    );
+    return response.data;
+  }
+
+  async adminListSimulationAssignments(pipelineId: string): Promise<{ assignments: any[] }> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/cms/simulation-pipelines/${pipelineId}/assignments`
+    );
+    return response.data;
+  }
+
+  async getSimulationAssignments(): Promise<{ assignments: any[] }> {
+    const response: AxiosResponse = await this.client.get('/simulations/assignments');
+    return response.data;
+  }
+
+  async startSimulationFromAssignment(assignmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/assignments/${assignmentId}/start`
+    );
+    return response.data;
+  }
+
+  async adminListJobRoleCatalog(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/job-role-catalog');
+    return response.data;
+  }
+
+  async adminCreateJobRoleCatalog(data: {
+    slug: string;
+    display_name: string;
+    category?: string;
+    skills_tags?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/job-role-catalog', data);
+    return response.data;
+  }
+
+  async adminListCompanyRolePreps(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/admin/cms/company-role-preps');
+    return response.data;
+  }
+
+  async adminCreateCompanyRolePrep(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/cms/company-role-preps', data);
+    return response.data;
+  }
+
+  async adminDeleteCompanyRolePrep(prepId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/cms/company-role-preps/${prepId}`);
+    return response.data;
+  }
+
+  async getSimulationJobRoles(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/simulations/catalog/job-roles');
+    return response.data;
+  }
+
+  async getSimulationCompanyPreps(company?: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/simulations/catalog/company-preps', {
+      params: company ? { company } : undefined,
+    });
+    return response.data;
+  }
+
+  async previewSimulationEntry(params: {
+    job_role_slug: string;
+    company_role_prep_id?: string;
+    company?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/simulations/entry/preview', { params });
+    return response.data;
+  }
+
+  async startSimulationRun(data: {
+    job_role_slug?: string;
+    resume_version_id?: string;
+    company_role_prep_id?: string;
+    company?: string;
+    assignment_id?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/simulations/runs/start', data);
+    return response.data;
+  }
+
+  async getSimulationRun(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/simulations/runs/${runId}`);
+    return response.data;
+  }
+
+  async getSimulationReport(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/simulations/runs/${runId}/report`);
+    return response.data;
+  }
+
+  async startSimulationMcqStage(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/simulations/runs/${runId}/stages/mcq/start`);
+    return response.data;
+  }
+
+  async startSimulationCodingStage(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/simulations/runs/${runId}/stages/coding/start`);
+    return response.data;
+  }
+
+  async completeSimulationCodingStage(
+    runId: string,
+    data: { branch: string; difficulty: string; items: any[] }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/coding/complete`,
+      data,
+      { timeout: 120000 }
+    );
+    return response.data;
+  }
+
+  async joinSimulationGD(runId: string, topicHint?: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/simulations/runs/${runId}/stages/gd/join`, {
+      topic_hint: topicHint,
+    });
+    return response.data;
+  }
+
+  async simulationGDResponse(
+    runId: string,
+    data: { text: string; room_id?: string }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/gd/response`,
+      data
+    );
+    return response.data;
+  }
+
+  async evaluateSimulationGD(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/gd/evaluate`,
+      {},
+      { timeout: 120000 }
+    );
+    return response.data;
+  }
+
+  async startSimulationSales(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/sales/start`
+    );
+    return response.data;
+  }
+
+  async simulationSalesResponse(
+    runId: string,
+    data: { text: string }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/sales/response`,
+      data
+    );
+    return response.data;
+  }
+
+  async evaluateSimulationSales(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/sales/evaluate`,
+      {},
+      { timeout: 120000 }
+    );
+    return response.data;
+  }
+
+  async startSimulationTextStage(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/text/start`,
+      {},
+      { timeout: 120000 }
+    );
+    return response.data;
+  }
+
+  async autosaveSimulationTextStage(
+    runId: string,
+    data: { answers: Record<string, string>; session_id?: string }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/text/autosave`,
+      data
+    );
+    return response.data;
+  }
+
+  async submitSimulationTextStage(
+    runId: string,
+    data: {
+      answers: Record<string, string>;
+      session_id?: string;
+      duration_seconds?: number;
+    }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/stages/text/submit`,
+      data,
+      { timeout: 180000 }
+    );
+    return response.data;
+  }
+
+  async completeSimulationStage(
+    runId: string,
+    data: {
+      stage_index: number;
+      score: number;
+      metadata?: Record<string, unknown>;
+      feedback?: Record<string, unknown>;
+      duration_seconds?: number;
+      engine_session_id?: string;
+    }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/simulations/runs/${runId}/complete-stage`, data);
+    return response.data;
+  }
+
+  async listSimulationRuns(limit = 20): Promise<{ runs: any[] }> {
+    const response: AxiosResponse = await this.client.get('/simulations/runs', { params: { limit } });
+    return response.data;
+  }
+
+  async getPlacementDriveLibrary(): Promise<{ drives: any[]; in_progress?: any[] }> {
+    const response: AxiosResponse = await this.client.get('/placement-drives/library');
+    return response.data;
+  }
+
+  async startPlacementDrive(templateId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/placement-drives/${templateId}/start`);
+    return response.data;
+  }
+
+  async getPlacementDriveAttempt(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/placement-drives/attempts/${attemptId}`);
+    return response.data;
+  }
+
+  async uploadPlacementDriveProctoringSnapshot(
+    attemptId: string,
+    snapshotIndex: number,
+    imageBlob: Blob,
+    stageIndex?: number
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append('snapshot_index', String(snapshotIndex));
+    formData.append('file', imageBlob, `snapshot_${snapshotIndex}.jpg`);
+    if (stageIndex != null) {
+      formData.append('stage_index', String(stageIndex));
+    }
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/proctoring/snapshots`,
+      formData
+    );
+    return response.data;
+  }
+
+  async completePlacementDriveStage(attemptId: string, data: {
+    stage_index: number;
+    score: number;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/complete-stage`,
+      data,
+    );
+    return response.data;
+  }
+
+  async startPlacementDriveMcqStage(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/mcq/start`,
+    );
+    return response.data;
+  }
+
+  async startPlacementDriveCodingStage(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/coding/start`,
+    );
+    return response.data;
+  }
+
+  async completePlacementDriveCodingStage(
+    attemptId: string,
+    data: { branch: string; difficulty: string; items: any[] },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/coding/complete`,
+      data,
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async joinPlacementDriveGD(attemptId: string, topicHint?: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/gd/join`,
+      { topic_hint: topicHint },
+    );
+    return response.data;
+  }
+
+  async placementDriveGDResponse(
+    attemptId: string,
+    data: { text: string; room_id?: string },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/gd/response`,
+      data,
+    );
+    return response.data;
+  }
+
+  async evaluatePlacementDriveGD(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/gd/evaluate`,
+      {},
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async startPlacementDriveSales(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/sales/start`,
+    );
+    return response.data;
+  }
+
+  async placementDriveSalesResponse(attemptId: string, data: { text: string }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/sales/response`,
+      data,
+    );
+    return response.data;
+  }
+
+  async evaluatePlacementDriveSales(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/sales/evaluate`,
+      {},
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async startPlacementDriveTextStage(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/text/start`,
+      {},
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async autosavePlacementDriveTextStage(
+    attemptId: string,
+    data: { answers: Record<string, string>; session_id?: string },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/text/autosave`,
+      data,
+    );
+    return response.data;
+  }
+
+  async submitPlacementDriveTextStage(
+    attemptId: string,
+    data: { answers: Record<string, string>; session_id?: string; duration_seconds?: number },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/placement-drives/attempts/${attemptId}/stages/text/submit`,
+      data,
+      { timeout: 120000 },
+    );
+    return response.data;
+  }
+
+  async getAssignedPlacementDrives(): Promise<{ assignments: any[] }> {
+    const response: AxiosResponse = await this.client.get('/placement-drives/assigned');
+    return response.data;
+  }
+
+  async getTpoCohortHeatmap(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/college/tpo/cohort-heatmap');
+    return response.data;
+  }
+
+  async getTpoAtRiskStudents(threshold = 55): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/college/tpo/at-risk', {
+      params: { threshold },
+    });
+    return response.data;
+  }
+
+  async getTpoDriveAssignments(): Promise<{ assignments: any[] }> {
+    const response: AxiosResponse = await this.client.get('/college/tpo/drive-assignments');
+    return response.data;
+  }
+
+  async getTpoPublishedDrives(): Promise<{ drives: any[] }> {
+    const response: AxiosResponse = await this.client.get('/college/tpo/published-drives');
+    return response.data;
+  }
+
+  async bulkScheduleTpoDrives(data: {
+    template_id: string;
+    student_ids: string[];
+    due_at?: string;
+    notes?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/college/tpo/bulk-schedule-drives', data);
+    return response.data;
+  }
+
+  async downloadTpoCohortCsv(): Promise<Blob> {
+    const response: AxiosResponse<Blob> = await this.client.get('/college/tpo/export/csv', {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
+  async getTpoCommitteeReportHtml(): Promise<string> {
+    const response: AxiosResponse<string> = await this.client.get('/college/tpo/export/report', {
+      responseType: 'text',
+    });
+    return response.data;
+  }
+
+  async startMockInterview(data: {
+    persona: 'technical' | 'hr' | 'culture_fit';
+    target_role: string;
+    company?: string;
+    job_description?: string;
+    max_turns?: number;
+    audio_consent?: boolean;
+    drive_attempt_id?: string;
+    drive_stage_index?: number;
+    simulation_run_id?: string;
+    simulation_stage_index?: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/mock-interviews/start', data);
+    return response.data;
+  }
+
+  async submitMockInterviewTurn(sessionId: string, answer: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-interviews/${sessionId}/turn`, { answer });
+    return response.data;
+  }
+
+  async completeMockInterview(sessionId: string, force = false): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-interviews/${sessionId}/complete`, { force });
+    return response.data;
+  }
+
+  async uploadMockInterviewProctoringSnapshot(
+    sessionId: string,
+    snapshotIndex: number,
+    imageBlob: Blob
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append('snapshot_index', String(snapshotIndex));
+    formData.append('file', imageBlob, `snapshot_${snapshotIndex}.jpg`);
+    const response: AxiosResponse = await this.client.post(
+      `/mock-interviews/${sessionId}/proctoring/snapshots`,
+      formData
+    );
+    return response.data;
+  }
+
+  async uploadSimulationProctoringSnapshot(
+    runId: string,
+    snapshotIndex: number,
+    imageBlob: Blob,
+    stageIndex?: number
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append('snapshot_index', String(snapshotIndex));
+    formData.append('file', imageBlob, `snapshot_${snapshotIndex}.jpg`);
+    if (stageIndex != null) {
+      formData.append('stage_index', String(stageIndex));
+    }
+    const response: AxiosResponse = await this.client.post(
+      `/simulations/runs/${runId}/proctoring/snapshots`,
+      formData
+    );
+    return response.data;
+  }
+
+  async getMockInterviewSession(sessionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-interviews/${sessionId}`);
+    return response.data;
+  }
+
+  async getPaymentPlans(): Promise<{ plans: any[]; monetization_active: boolean }> {
+    const response: AxiosResponse = await this.client.get('/payments/plans');
+    return response.data;
+  }
+
+  async initiateCheckout(data: {
+    plan_slug: string;
+    coupon_code?: string;
+    referral_code?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/payments/checkout', data);
+    return response.data;
+  }
+
+  async validatePaymentCoupon(code: string, planSlug: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/payments/validate-coupon', {
+      code,
+      plan_slug: planSlug,
+    });
+    return response.data;
+  }
+
+  async getMyPaymentTransactions(): Promise<{ transactions: any[] }> {
+    const response: AxiosResponse = await this.client.get('/payments/my-transactions');
+    return response.data;
+  }
+
+  async getMyReferralCode(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/payments/referral');
+    return response.data;
+  }
+
+  async adminCreatePaymentCoupon(data: {
+    code: string;
+    description?: string;
+    discount_percent?: number;
+    discount_amount_inr?: number;
+    max_uses?: number;
+    allowed_plan_slugs?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/payments/admin/coupons', data);
+    return response.data;
+  }
+
+  async adminListEnterpriseOrgs(): Promise<{ organizations: any[] }> {
+    const response: AxiosResponse = await this.client.get('/admin/enterprise/organizations');
+    return response.data;
+  }
+
+  async adminCreateEnterpriseOrg(data: {
+    organization_name: string;
+    industry?: string;
+    website?: string;
+    admin_name: string;
+    admin_email: string;
+    admin_phone?: string;
+    job_title?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/enterprise/organizations', data);
+    return response.data;
+  }
+
+  async getEnterpriseDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/enterprise/dashboard');
+    return response.data;
+  }
+
+  async getEnterpriseCampaigns(): Promise<{ campaigns: any[] }> {
+    const response: AxiosResponse = await this.client.get('/enterprise/campaigns');
+    return response.data;
+  }
+
+  async createEnterpriseCampaign(data: {
+    title: string;
+    job_role: string;
+    company?: string;
+    mock_test_template_id: string;
+    is_active?: boolean;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/enterprise/campaigns', data);
+    return response.data;
+  }
+
+  async getEnterpriseCampaignResults(campaignId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/enterprise/campaigns/${campaignId}/results`);
+    return response.data;
+  }
+
+  async createEnterpriseInvites(campaignId: string, data: {
+    emails?: string[];
+    names?: string[];
+    expires_in_days?: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/enterprise/campaigns/${campaignId}/invites`, data);
+    return response.data;
+  }
+
+  async getEnterpriseMockTests(): Promise<{ mock_tests: any[] }> {
+    const response: AxiosResponse = await this.client.get('/enterprise/mock-tests');
+    return response.data;
+  }
+
+  async getEnterprisePublicInvite(token: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/enterprise/public/invites/${token}`);
+    return response.data;
+  }
+
+  async acceptEnterpriseInvite(token: string, data: { candidate_name: string; candidate_email: string }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/enterprise/public/invites/${token}/accept`, data);
+    return response.data;
+  }
+
+  async startEnterpriseAssessment(token: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/enterprise/public/invites/${token}/start`);
+    return response.data;
+  }
+
+  async submitEnterpriseAssessment(token: string, data: {
+    answers: Record<string, string>;
+    time_per_question?: Record<string, number>;
+    time_taken_seconds?: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/enterprise/public/invites/${token}/submit`, data);
+    return response.data;
+  }
+}
+
+export const apiClient = new ApiClient();
+export const api = apiClient; // Export as 'api' for cleaner imports
+export default apiClient;
+
+// ============================================================================
+// STANDALONE EXPORT FUNCTIONS FOR CONVENIENCE
+// ============================================================================
+
+// Phase 1: Student Subscription Analytics
+export const getStudentSubscriptionStatus = () => apiClient.getStudentSubscriptionStatus();
+export const getStudentUsageAnalytics = () => apiClient.getStudentUsageAnalytics();
+
+// Phase 2: College Subscription Analytics
+export const getCollegeLicenseOverview = () => apiClient.getCollegeLicenseOverview();
+export const getStudentSubscriptionDistribution = () => apiClient.getStudentSubscriptionDistribution();
+export const getUsageAnalyticsBySubscription = () => apiClient.getUsageAnalyticsBySubscription();
+export const getSubscriptionHealth = () => apiClient.getSubscriptionHealth();
+// Phase 3: Admin Subscription & Business Analytics
+export const getAdminSubscriptionOverview = () => apiClient.getAdminSubscriptionOverview();
+export const getAdminCollegeLicenses = () => apiClient.getAdminCollegeLicenses();
+export const getAdminSubscriptionTrends = () => apiClient.getAdminSubscriptionTrends();
+export const getAdminRevenueMetrics = () => apiClient.getAdminRevenueMetrics();

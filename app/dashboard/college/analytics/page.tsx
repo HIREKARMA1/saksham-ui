@@ -1,0 +1,307 @@
+"use client"
+
+import { useEffect, useState } from 'react'
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
+import { Loader } from '@/components/ui/loader'
+import { apiClient } from '@/lib/api'
+import { Users, TrendingUp, Award, Target, BookOpen, Briefcase, Activity, AlertCircle, CheckCircle, XCircle, GraduationCap } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+
+export default function CollegeAnalytics() {
+    const [analytics, setAnalytics] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        fetchAnalytics()
+    }, [])
+
+    const fetchAnalytics = async () => {
+        try {
+            const data = await apiClient.getCollegeAnalytics()
+            setAnalytics(data)
+        } catch (error) {
+            console.error('Error fetching analytics:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (loading) {
+        return (
+            <DashboardLayout requiredUserType="college">
+                <div className="flex justify-center items-center py-12">
+                    <Loader size="lg" />
+                </div>
+            </DashboardLayout>
+        )
+    }
+
+    const sm = analytics?.student_metrics || {}
+    const am = analytics?.assessment_metrics || {}
+    const pm = analytics?.performance_metrics || {}
+    const pr = analytics?.placement_readiness || {}
+    const jra = analytics?.job_role_analytics || {}
+    const ra = analytics?.round_analytics || {}
+
+    return (
+        <DashboardLayout requiredUserType="college">
+            <div className="space-y-6 max-w-[1400px]">
+                {/* Header */}
+                <div className="space-y-1">
+                    <h1 className="text-[32px] font-bold text-[#0F172A] dark:text-white">Analytics Dashboard</h1>
+                    <p className="text-gray-500 text-sm dark:text-gray-400">
+                        Comprehensive insights and performance metrics from database
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">
+                        Last updated: {analytics?.generated_at ? new Date(analytics.generated_at).toLocaleString() : 'N/A'}
+                    </p>
+                </div>
+
+                {/* Primary Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Total Students */}
+                    <div className="bg-[#E0F2FE] dark:bg-[#0c4a6e] rounded-xl p-6 flex justify-between items-start">
+                        <div>
+                            <p className="text-[#0F172A] dark:text-gray-200 font-medium text-sm mb-1">Total Students</p>
+                            <h3 className="text-3xl font-bold text-[#0F172A] dark:text-white mb-1">{sm.total_students || 0}</h3>
+                            <p className="text-xs text-green-600 font-medium">{sm.active_students || 0} active</p>
+                        </div>
+                        <div className="h-10 w-10 bg-[#BAE6FD] dark:bg-[#075985] rounded-lg flex items-center justify-center">
+                            <Users className="h-5 w-5 text-[#0284C7] dark:text-[#38bdf8]" />
+                        </div>
+                    </div>
+
+                    {/* Total Assessments */}
+                    <div className="bg-[#F3E8FF] dark:bg-[#2e1040] rounded-xl p-6 flex justify-between items-start">
+                        <div>
+                            <p className="text-[#0F172A] dark:text-gray-200 font-medium text-sm mb-1">Total Assessments</p>
+                            <h3 className="text-3xl font-bold text-[#0F172A] dark:text-white mb-1">{am.total_assessments || 0}</h3>
+                            <p className="text-xs text-[#0F172A]/60 dark:text-gray-400 font-medium">{am.completed_assessments || 0} completed</p>
+                        </div>
+                        <div className="h-10 w-10 bg-[#E9D5FF] dark:bg-[#581c87] rounded-lg flex items-center justify-center">
+                            <BookOpen className="h-5 w-5 text-[#9333EA] dark:text-[#d8b4fe]" />
+                        </div>
+                    </div>
+
+                    {/* Avg Readiness */}
+                    <div className="bg-[#FAE8FF] dark:bg-[#500724] rounded-xl p-6 flex justify-between items-start">
+                        <div>
+                            <p className="text-[#0F172A] dark:text-gray-200 font-medium text-sm mb-1">Avg Readiness</p>
+                            <h3 className="text-3xl font-bold text-[#0F172A] dark:text-white mb-1">{am.avg_readiness_index || 0}%</h3>
+                            <p className="text-xs text-[#0F172A]/60 dark:text-gray-400 font-medium">Placement readiness</p>
+                        </div>
+                        <div className="h-10 w-10 bg-[#F5D0FE] dark:bg-[#831843] rounded-lg flex items-center justify-center">
+                            <TrendingUp className="h-5 w-5 text-[#D946EF] dark:text-[#f0abfc]" />
+                        </div>
+                    </div>
+
+                    {/* Completion Rate */}
+                    <div className="bg-[#FEFCE8] dark:bg-[#422006] rounded-xl p-6 flex justify-between items-start">
+                        <div>
+                            <p className="text-[#0F172A] dark:text-gray-200 font-medium text-sm mb-1">Completion Rate</p>
+                            <h3 className="text-3xl font-bold text-[#0F172A] dark:text-white mb-1">{am.completion_rate || 0}%</h3>
+                            <p className="text-xs text-[#0F172A]/60 dark:text-gray-400 font-medium">Assessment completion</p>
+                        </div>
+                        <div className="h-10 w-10 bg-[#FEF08A] dark:bg-[#713f12] rounded-lg flex items-center justify-center">
+                            <Target className="h-5 w-5 text-[#CA8A04] dark:text-[#fde047]" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="bg-white dark:bg-[#0F172A] rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+                    <div className="mb-6">
+                        <h2 className="text-lg font-bold flex items-center gap-2 text-[#0F172A] dark:text-white">
+                            <Award className="h-5 w-5 text-blue-600" /> Performance Metrics
+                        </h2>
+                        <p className="text-gray-500 text-sm mt-1">Average scores across different assessment rounds</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4">
+                        {(() => {
+                            const rounds = ra.performance_by_round?.length > 0
+                                ? ra.performance_by_round
+                                : [{ round_type: 'RoundType.APTITUDE', avg_score: 0, count: 0 }]
+
+                            return rounds.map((round: any, idx: number) => {
+                                const roundName = round.round_type.replace('RoundType.', '').replace(/_/g, ' ')
+
+                                return (
+                                    <div key={round.round_type} className="bg-[#E0F2FE] dark:bg-[#0c4a6e] w-[280px] rounded-lg p-5">
+                                        <p className="text-xs font-bold text-[#475569] dark:text-blue-200 tracking-wider uppercase mb-2">{roundName}</p>
+                                        <p className="text-3xl font-bold text-[#0F172A] dark:text-white mb-2">{round.avg_score || 0}%</p>
+                                        <p className="text-xs font-semibold text-[#16a34a] dark:text-[#4ade80]">{round.count} assessment{round.count !== 1 ? 's' : ''}</p>
+                                    </div>
+                                )
+                            })
+                        })()}
+                    </div>
+                </div>
+
+                {/* Placement Readiness */}
+                <div>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {/* Placement Ready */}
+                        <div className="bg-[#DCFCE7] dark:bg-[#064e3b] rounded-xl p-6 flex flex-col justify-between h-[160px]">
+                            <div className="mb-2">
+                                <h3 className="text-[#0F172A] dark:text-white font-medium text-lg">Placement Ready</h3>
+                                <p className="text-sm text-[#0F172A]/70 dark:text-gray-300">Readiness Index ≥ 70%</p>
+                            </div>
+                            <div>
+                                <p className="text-4xl font-bold text-[#0F172A] dark:text-white mb-1">{pr.placement_ready_students || 0}</p>
+                                <p className="text-xs text-[#0F172A]/70 dark:text-gray-400 font-medium">
+                                    {pr.placement_ready_percentage || 0}% of students
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Need Improvement */}
+                        <div className="bg-[#FFEDD5] dark:bg-[#431407] rounded-xl p-6 flex flex-col justify-between h-[160px]">
+                            <div className="mb-2">
+                                <h3 className="text-[#0F172A] dark:text-white font-medium text-lg">Need Improvement</h3>
+                                <p className="text-sm text-[#0F172A]/70 dark:text-gray-300">Readiness Index &lt; 50%</p>
+                            </div>
+                            <div>
+                                <p className="text-4xl font-bold text-[#0F172A] dark:text-white mb-1">{pr.students_needing_improvement || 0}</p>
+                                <p className="text-xs text-[#0F172A]/70 dark:text-gray-400 font-medium">
+                                    Require attention
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Below Threshold */}
+                        <div className="bg-[#DBEAFE] dark:bg-[#1e3a8a] rounded-xl p-6 flex flex-col justify-between h-[160px]">
+                            <div className="mb-2">
+                                <h3 className="text-[#0F172A] dark:text-white font-medium text-lg">Below Threshold</h3>
+                                <p className="text-sm text-[#0F172A]/70 dark:text-gray-300">Score &lt; 50%</p>
+                            </div>
+                            <div>
+                                <p className="text-4xl font-bold text-[#0F172A] dark:text-white mb-1">{pm.students_below_threshold || 0}</p>
+                                <p className="text-xs text-[#0F172A]/70 dark:text-gray-400 font-medium">
+                                    Need extra support
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* Students by Branch */}
+                    <Card className="shadow-none border border-gray-200 dark:border-gray-800">
+                        <CardContent className="p-6">
+                            <div className="mb-4">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#0F172A] dark:text-white">
+                                    Students by Branch/Department
+                                </h2>
+                                <p className="text-gray-500 text-xs">Distribution across different branches</p>
+                            </div>
+                            <div className="space-y-2">
+                                {(() => {
+                                    const branches = sm.students_by_branch?.length > 0
+                                        ? sm.students_by_branch
+                                        : [{ branch: 'N/A', count: 0 }]
+
+                                    return branches.map((branch: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-center px-4 py-3 bg-[#F8FAFC] dark:bg-[#1E293B] rounded-lg">
+                                            <span className="font-medium text-sm text-[#0F172A] dark:text-white">{branch.branch}</span>
+                                            <span className="font-bold text-[#0F172A] dark:text-white">{branch.count}</span>
+                                        </div>
+                                    ))
+                                })()}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Popular Job Roles */}
+                    <Card className="shadow-none border border-gray-200 dark:border-gray-800">
+                        <CardContent className="p-6">
+                            <div className="mb-4">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#0F172A] dark:text-white">
+                                    <Briefcase className="h-5 w-5" /> Most Popular Job Roles
+                                </h2>
+                                <p className="text-gray-500 text-xs">Top assessed job roles by students</p>
+                            </div>
+                            <div className="space-y-2">
+                                {(() => {
+                                    const roles = jra.popular_job_roles?.length > 0
+                                        ? jra.popular_job_roles
+                                        : [{ title: 'N/A', category: 'N/A', count: 0 }]
+
+                                    return roles.map((role: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-center px-4 py-3 bg-[#F8FAFC] dark:bg-[#1E293B] rounded-lg">
+                                            <div>
+                                                <p className="font-medium text-[#0F172A] dark:text-white text-sm">{role.title}</p>
+                                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">{role.category}</p>
+                                            </div>
+                                            <span className="font-bold text-[#0F172A] dark:text-white">
+                                                {role.count}
+                                            </span>
+                                        </div>
+                                    ))
+                                })()}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* Student Overview */}
+                    <Card className="shadow-none border border-gray-200 dark:border-gray-800">
+                        <CardContent className="p-6">
+                            <div className="mb-4">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#0F172A] dark:text-white">
+                                    <Users className="h-5 w-5" /> Student Overview
+                                </h2>
+                                <p className="text-gray-500 text-xs">Student distribution and status</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-4 py-3 bg-[#F8FAFC] dark:bg-[#1E293B] rounded-lg">
+                                    <span className="font-medium text-sm text-[#0F172A] dark:text-white">Active Students</span>
+                                    <span className="font-bold text-[#0F172A] dark:text-white">{sm.active_students || 0}</span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 bg-[#F8FAFC] dark:bg-[#1E293B] rounded-lg">
+                                    <span className="font-medium text-sm text-[#0F172A] dark:text-white">Inactive Students</span>
+                                    <span className="font-bold text-[#0F172A] dark:text-white">{sm.inactive_students || 0}</span>
+                                </div>
+                                <div className="flex justify-between items-center px-4 py-3 bg-[#F8FAFC] dark:bg-[#1E293B] rounded-lg">
+                                    <span className="font-medium text-sm text-[#0F172A] dark:text-white">Profile Completion</span>
+                                    <span className="font-bold text-[#0F172A] dark:text-white">{sm.avg_profile_completion || 0}%</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Assessment Activity */}
+                    <Card className="shadow-none border border-gray-200 dark:border-gray-800">
+                        <CardContent className="p-6">
+                            <div className="mb-4">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#0F172A] dark:text-white">
+                                    <Activity className="h-5 w-5" /> Assessment Activity
+                                </h2>
+                                <p className="text-gray-500 text-xs">Assessment completion metrics</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-[#F3E8FF] dark:bg-[#2e1040] rounded-xl flex flex-col justify-center items-center text-center">
+                                    <p className="text-sm text-[#64748B] dark:text-gray-400 mb-1 font-medium">Completed</p>
+                                    <p className="text-3xl font-bold text-[#7C3AED] dark:text-[#a855f7]">{am.completed_assessments || 0}</p>
+                                </div>
+                                <div className="p-4 bg-[#FEFCE8] dark:bg-[#382b0e] rounded-xl flex flex-col justify-center items-center text-center">
+                                    <p className="text-sm text-[#64748B] dark:text-gray-400 mb-1 font-medium">In Progress</p>
+                                    <p className="text-3xl font-bold text-[#D97706] dark:text-[#f59e0b]">{am.in_progress_assessments || 0}</p>
+                                </div>
+                                <div className="p-4 bg-[#E0F2FE] dark:bg-[#0c4a6e] rounded-xl flex flex-col justify-center items-center text-center">
+                                    <p className="text-sm text-[#64748B] dark:text-gray-400 mb-1 font-medium">Today</p>
+                                    <p className="text-3xl font-bold text-[#059669] dark:text-[#10b981]">{am.assessments_today || 0}</p>
+                                </div>
+                                <div className="p-4 bg-[#EEF2FF] dark:bg-[#1e1b4b] rounded-xl flex flex-col justify-center items-center text-center">
+                                    <p className="text-sm text-[#64748B] dark:text-gray-400 mb-1 font-medium">This Month</p>
+                                    <p className="text-3xl font-bold text-[#6366F1] dark:text-[#818cf8]">{am.assessments_this_month || 0}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </DashboardLayout>
+    )
+}
