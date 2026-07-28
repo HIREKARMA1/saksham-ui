@@ -17,6 +17,7 @@ import {
   BarChart3,
   CreditCard,
   User,
+  GraduationCap,
 } from "lucide-react";
 
 export type StudentNavItem = {
@@ -103,6 +104,12 @@ export const studentNavGroups: StudentNavGroup[] = [
         label: "AI Interview",
         href: `${base}/mock-interview`,
         icon: Mic,
+      },
+      {
+        id: "virtual-internships",
+        label: "Virtual Internships",
+        href: `${base}/virtual-internships`,
+        icon: GraduationCap,
       },
     ],
   },

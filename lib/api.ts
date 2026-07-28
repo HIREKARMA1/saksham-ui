@@ -51,7 +51,12 @@ class ApiClient {
 
         // FormData must not use application/json — browser sets multipart boundary
         if (typeof FormData !== "undefined" && config.data instanceof FormData) {
-          delete config.headers["Content-Type"];
+          if (config.headers && typeof (config.headers as any).set === "function") {
+            (config.headers as any).set("Content-Type", undefined);
+          } else if (config.headers) {
+            delete (config.headers as any)["Content-Type"];
+            delete (config.headers as any)["content-type"];
+          }
         }
 
         // Add auth token
@@ -2584,6 +2589,216 @@ class ApiClient {
     time_taken_seconds?: number;
   }): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/enterprise/public/invites/${token}/submit`, data);
+    return response.data;
+  }
+
+  // --------------------------------------------------------------------------
+  // Virtual Internships (POC)
+  // --------------------------------------------------------------------------
+
+  async listVirtualInternshipPrograms(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/virtual-internships/programs",
+    );
+    return response.data;
+  }
+
+  async getVirtualInternshipProgram(programId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/virtual-internships/programs/${programId}`,
+    );
+    return response.data;
+  }
+
+  async enrollVirtualInternship(programId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/students/virtual-internships/enroll",
+      { program_id: programId },
+    );
+    return response.data;
+  }
+
+  async getMyVirtualInternshipRuns(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/virtual-internships/runs/me",
+    );
+    return response.data;
+  }
+
+  async getVirtualInternshipRun(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/virtual-internships/runs/${runId}`,
+    );
+    return response.data;
+  }
+
+  async getVirtualInternshipTodayTask(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/virtual-internships/runs/${runId}/today-task`,
+    );
+    return response.data;
+  }
+
+  async submitVirtualInternshipTask(params: {
+    runId: string;
+    taskId: string;
+    textAnswer?: string;
+    githubUrl?: string;
+    driveUrl?: string;
+    externalUrl?: string;
+    comments?: string;
+    links?: Record<string, unknown>;
+    file?: File | null;
+  }): Promise<any> {
+    const form = new FormData();
+    if (params.textAnswer) form.append("text_answer", params.textAnswer);
+    if (params.githubUrl) form.append("github_url", params.githubUrl);
+    if (params.driveUrl) form.append("drive_url", params.driveUrl);
+    if (params.externalUrl) form.append("external_url", params.externalUrl);
+    if (params.comments) form.append("comments", params.comments);
+    if (params.links) form.append("links", JSON.stringify(params.links));
+    if (params.file) form.append("file", params.file, params.file.name);
+    const response: AxiosResponse = await this.client.post(
+      `/students/virtual-internships/runs/${params.runId}/tasks/${params.taskId}/submit`,
+      form,
+    );
+    return response.data;
+  }
+
+  async listMyVirtualInternshipCertificates(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/students/virtual-internships/certificates/me",
+    );
+    return response.data;
+  }
+
+  async getVirtualInternshipCertificate(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/students/virtual-internships/runs/${runId}/certificate`,
+    );
+    return response.data;
+  }
+
+  async issueVirtualInternshipCertificate(runId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/students/virtual-internships/runs/${runId}/certificate`,
+    );
+    return response.data;
+  }
+
+  async adminListVirtualInternshipPrograms(status?: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/cms/virtual-internships/programs",
+      { params: status ? { status } : undefined },
+    );
+    return response.data;
+  }
+
+  async adminCreateVirtualInternshipProgram(payload: Record<string, unknown>): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      "/admin/cms/virtual-internships/programs",
+      payload,
+    );
+    return response.data;
+  }
+
+  async adminUpdateVirtualInternshipProgram(
+    programId: string,
+    payload: Record<string, unknown>,
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(
+      `/admin/cms/virtual-internships/programs/${programId}`,
+      payload,
+    );
+    return response.data;
+  }
+
+  async adminDeleteVirtualInternshipProgram(programId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/cms/virtual-internships/programs/${programId}`,
+    );
+    return response.data;
+  }
+
+  async adminUploadVirtualInternshipThumbnail(
+    programId: string,
+    file: File,
+  ): Promise<any> {
+    const form = new FormData();
+    form.append("file", file);
+    const response: AxiosResponse = await this.client.post(
+      `/admin/cms/virtual-internships/programs/${programId}/thumbnail`,
+      form,
+    );
+    return response.data;
+  }
+
+  async adminGetVirtualInternshipProgram(programId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/cms/virtual-internships/programs/${programId}`,
+    );
+    return response.data;
+  }
+
+  async adminCreateVirtualInternshipTasksBulk(
+    programId: string,
+    tasks: Record<string, unknown>[],
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/cms/virtual-internships/programs/${programId}/tasks/bulk`,
+      { tasks },
+    );
+    return response.data;
+  }
+
+  async adminListVirtualInternshipStudents(programId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/cms/virtual-internships/programs/${programId}/students`,
+    );
+    return response.data;
+  }
+
+  async adminListVirtualInternshipSubmissions(params?: {
+    status?: string;
+    program_id?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/cms/virtual-internships/submissions",
+      { params },
+    );
+    return response.data;
+  }
+
+  async adminReviewVirtualInternshipSubmission(
+    submissionId: string,
+    reviewPayload: { decision: string; marks?: number; feedback?: string },
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/cms/virtual-internships/submissions/${submissionId}/review`,
+      reviewPayload,
+    );
+    return response.data;
+  }
+
+  async adminDownloadVirtualInternshipArtifact(
+    submissionId: string,
+  ): Promise<{ blob: Blob; filename: string }> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/cms/virtual-internships/submissions/${submissionId}/artifact`,
+      { responseType: "blob" },
+    );
+    let filename = "attachment";
+    const disposition = String(response.headers["content-disposition"] || "");
+    const match = /filename="?([^";]+)"?/i.exec(disposition);
+    if (match?.[1]) filename = match[1];
+    return { blob: response.data as Blob, filename };
+  }
+
+  async adminGetVirtualInternshipsAnalytics(programId?: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      "/admin/cms/virtual-internships/analytics",
+      { params: programId ? { program_id: programId } : undefined },
+    );
     return response.data;
   }
 }

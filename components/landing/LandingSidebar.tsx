@@ -17,6 +17,7 @@ import {
   CreditCard,
   Send,
   ChevronDown,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter, usePathname } from "next/navigation";
@@ -79,6 +80,7 @@ export const adminSidebarFeatures: SidebarItem[] = [
   { id: "mock-tests-admin", icon: <Target className="w-5 h-5" />, label: "Mock Tests" },
   { id: "placement-drives-admin", icon: <Layers className="w-5 h-5" />, label: "Placement Drives" },
   { id: "simulation-pipelines-admin", icon: <Workflow className="w-5 h-5" />, label: "Simulations" },
+  { id: "virtual-internships-admin", icon: <GraduationCap className="w-5 h-5" />, label: "Virtual Internships" },
   { id: "profile", icon: <User className="w-5 h-5" />, label: "Profile" },
 ];
 
