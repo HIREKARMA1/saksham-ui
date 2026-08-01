@@ -64,6 +64,12 @@ export default function AdminAiUsagePage() {
   const [feature, setFeature] = useState<string>("all")
   const [provider, setProvider] = useState<string>("all")
   const [studentId, setStudentId] = useState("")
+  const [userSearch, setUserSearch] = useState("")
+  const [userSearchApplied, setUserSearchApplied] = useState("")
+  const [segment, setSegment] = useState<string>("all")
+  const [studentPage, setStudentPage] = useState(1)
+  const [studentTotal, setStudentTotal] = useState(0)
+  const [studentPageSize] = useState(25)
   const [featureOptions, setFeatureOptions] = useState<FeatureOption[]>([])
 
   const [loading, setLoading] = useState(true)
@@ -86,6 +92,17 @@ export default function AdminAiUsagePage() {
     return params
   }, [startDate, endDate, feature, provider, studentId])
 
+  const userQueryParams = useMemo(
+    () => ({
+      ...queryParams,
+      q: userSearchApplied || undefined,
+      segment: segment !== "all" ? segment : undefined,
+      page: studentPage,
+      page_size: studentPageSize,
+    }),
+    [queryParams, userSearchApplied, segment, studentPage, studentPageSize]
+  )
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -93,20 +110,21 @@ export default function AdminAiUsagePage() {
         apiClient.getAiUsageSummary(queryParams),
         apiClient.getAiUsageByFeature(queryParams),
         apiClient.getAiUsageByProvider(queryParams),
-        apiClient.getAiUsageByStudent({ ...queryParams, page: 1, page_size: 50 }),
+        apiClient.getAiUsageByStudent(userQueryParams),
       ])
       setSummary(sum)
       setByFeature(feat?.items || [])
       setByProvider(prov?.items || [])
       setProviderRollup(prov?.by_provider || [])
       setStudents(stud?.items || [])
+      setStudentTotal(stud?.total || 0)
     } catch (err: any) {
       console.error(err)
       toast.error(err?.response?.data?.detail || "Failed to load AI usage analytics")
     } finally {
       setLoading(false)
     }
-  }, [queryParams])
+  }, [queryParams, userQueryParams])
 
   useEffect(() => {
     apiClient
@@ -130,7 +148,11 @@ export default function AdminAiUsagePage() {
   const handleExport = async (format: "csv" | "excel") => {
     setExporting(true)
     try {
-      const blob = await apiClient.exportAiUsage(format, queryParams)
+      const blob = await apiClient.exportAiUsage(format, {
+        ...queryParams,
+        q: userSearchApplied || undefined,
+        segment: segment !== "all" ? segment : undefined,
+      })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -145,6 +167,15 @@ export default function AdminAiUsagePage() {
     }
   }
 
+  const segmentBadge = (seg: string) => {
+    if (seg === "college")
+      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">College</Badge>
+    if (seg === "outsider")
+      return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Outsider</Badge>
+    return <Badge variant="outline">Unlinked</Badge>
+  }
+
+  const totalPages = Math.max(1, Math.ceil(studentTotal / studentPageSize))
   const kpis = summary?.kpis
 
   return (
@@ -371,37 +402,96 @@ export default function AdminAiUsagePage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Student-wise AI Usage</CardTitle>
+                <CardTitle>User AI Usage</CardTitle>
                 <CardDescription>
-                  Expand a row to see which features each student used and token spend
+                  All students (college + outsider). Expand a row for per-section token and cost
+                  breakdown.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="md:col-span-2 flex gap-2">
+                    <Input
+                      placeholder="Search name or email"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          setStudentPage(1)
+                          setUserSearchApplied(userSearch.trim())
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setStudentPage(1)
+                        setUserSearchApplied(userSearch.trim())
+                      }}
+                    >
+                      Search
+                    </Button>
+                  </div>
+                  <div>
+                    <Select
+                      value={segment}
+                      onValueChange={(v) => {
+                        setSegment(v)
+                        setStudentPage(1)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Segment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All users</SelectItem>
+                        <SelectItem value="college">College</SelectItem>
+                        <SelectItem value="outsider">Outsider (B2C)</SelectItem>
+                        <SelectItem value="unlinked">Unlinked only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 {students.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    No student usage in this range yet. Usage appears after instrumented AI calls run.
+                    No user usage in this range. New AI calls attribute to the logged-in student
+                    after the latest fix — re-run Career Twin / Mock Interview to populate named
+                    rows.
                   </p>
                 )}
+
                 {students.map((s) => {
-                  const key = s.student_id || "system"
+                  const key = s.student_id || "unlinked"
                   const open = expandedStudent === key
                   return (
                     <div key={key} className="rounded-lg border">
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted/40"
+                        className="flex w-full flex-col gap-2 p-3 text-left hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                         onClick={() => setExpandedStudent(open ? null : key)}
                       >
-                        <div>
-                          <div className="font-medium">{s.student_name || "Unknown"}</div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{s.student_name || "Unknown"}</span>
+                            {segmentBadge(s.user_segment || "unlinked")}
+                            {s.subscription_type && (
+                              <Badge variant="secondary">{s.subscription_type}</Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {s.student_email || s.student_id || "No student linked"}
+                            {s.college_name ? ` · ${s.college_name}` : ""}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-3 text-sm">
                           <Badge variant="secondary">{s.requests} req</Badge>
-                          <span>{formatTokens(s.total_tokens)} tok</span>
-                          <span className="text-muted-foreground">{formatUsd(s.estimated_cost_usd)}</span>
+                          <span title="Input tokens">{formatTokens(s.input_tokens)} in</span>
+                          <span title="Output tokens">{formatTokens(s.output_tokens)} out</span>
+                          <span className="font-medium">{formatTokens(s.total_tokens)} tok</span>
+                          <span className="text-muted-foreground">
+                            {formatUsd(s.estimated_cost_usd)}
+                          </span>
                           {open ? (
                             <ChevronUp className="h-4 w-4" />
                           ) : (
@@ -411,6 +501,9 @@ export default function AdminAiUsagePage() {
                       </button>
                       {open && (
                         <div className="border-t bg-muted/20 p-3">
+                          <p className="mb-2 text-xs font-medium text-muted-foreground">
+                            Usage by section
+                          </p>
                           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             {(s.features || []).map((f: any) => (
                               <div
@@ -418,8 +511,15 @@ export default function AdminAiUsagePage() {
                                 className="rounded-md border bg-background p-2 text-sm"
                               >
                                 <div className="font-medium">{f.label}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  {f.requests} requests
+                                </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {f.requests} requests · {formatTokens(f.total_tokens)} tokens ·{" "}
+                                  {formatTokens(f.input_tokens || 0)} in ·{" "}
+                                  {formatTokens(f.output_tokens || 0)} out ·{" "}
+                                  {formatTokens(f.total_tokens)} total
+                                </div>
+                                <div className="text-xs font-medium">
                                   {formatUsd(f.estimated_cost_usd)}
                                 </div>
                               </div>
@@ -433,6 +533,32 @@ export default function AdminAiUsagePage() {
                     </div>
                   )
                 })}
+
+                {studentTotal > studentPageSize && (
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Page {studentPage} of {totalPages} · {studentTotal} users
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={studentPage <= 1}
+                        onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={studentPage >= totalPages}
+                        onClick={() => setStudentPage((p) => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
