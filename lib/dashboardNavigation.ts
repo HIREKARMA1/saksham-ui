@@ -51,6 +51,7 @@ export function getDashboardFeatureRoute(
       colleges: `/dashboard/admin/colleges`,
       students: `/dashboard/admin/students`,
       analytics: `/dashboard/admin/analytics`,
+      'ai-usage': `/dashboard/admin/ai-usage`,
       disha: `/dashboard/admin/disha`,
       'question-bank': `/dashboard/admin/question-bank`,
       'mock-tests-admin': `/dashboard/admin/mock-tests`,
