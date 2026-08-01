@@ -1062,6 +1062,43 @@ class ApiClient {
     return response.data;
   }
 
+  // Admin AI Usage Analytics
+  async getAiUsageSummary(params: Record<string, string | undefined> = {}): Promise<any> {
+    const response = await this.client.get("/admin/ai-usage/summary", { params });
+    return response.data;
+  }
+
+  async getAiUsageByFeature(params: Record<string, string | undefined> = {}): Promise<any> {
+    const response = await this.client.get("/admin/ai-usage/by-feature", { params });
+    return response.data;
+  }
+
+  async getAiUsageByProvider(params: Record<string, string | undefined> = {}): Promise<any> {
+    const response = await this.client.get("/admin/ai-usage/by-provider", { params });
+    return response.data;
+  }
+
+  async getAiUsageByStudent(params: Record<string, string | number | undefined> = {}): Promise<any> {
+    const response = await this.client.get("/admin/ai-usage/by-student", { params });
+    return response.data;
+  }
+
+  async getAiUsageFeatures(): Promise<{ features: Array<{ key: string; label: string }> }> {
+    const response = await this.client.get("/admin/ai-usage/features");
+    return response.data;
+  }
+
+  async exportAiUsage(
+    format: string = "csv",
+    params: Record<string, string | undefined> = {}
+  ): Promise<Blob> {
+    const response = await this.client.get("/admin/ai-usage/export", {
+      params: { ...params, format },
+      responseType: "blob",
+    });
+    return response.data;
+  }
+
   async exportAnalytics(
     format: string = 'json',
     startDate?: string,

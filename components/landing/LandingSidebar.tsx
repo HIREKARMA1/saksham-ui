@@ -19,6 +19,7 @@ import {
   CreditCard,
   Send,
   Mic,
+  Zap,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n/useTranslation';
 // import { AnimatedBackground } from '@/components/ui/animated-background';
@@ -208,6 +209,12 @@ export const adminSidebarFeatures: SidebarItem[] = [
     id: "analytics",
     icon: <BarChart3 className="w-5 h-5" />,
     label: "Analytics",
+    onClick: undefined,
+  },
+  {
+    id: "ai-usage",
+    icon: <Zap className="w-5 h-5" />,
+    label: "AI Usage",
     onClick: undefined,
   },
   {
